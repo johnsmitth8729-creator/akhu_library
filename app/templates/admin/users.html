@@ -1,0 +1,684 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Manage Users | Admin Panel{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user.css') }}">
+{% endblock %}
+
+{% block content %}
+{% set UserModel = current_user.__class__ %}
+{% set total_users = UserModel.query.count() %}
+{% set active_users = UserModel.query.filter_by(is_blocked=False).count() %}
+{% set librarian_users = UserModel.query.filter_by(role='librarian').count() %}
+{% set admin_users = UserModel.query.filter_by(role='admin').count() %}
+
+{% set FacultyModel = UserModel.faculty_rel.property.mapper.class_ %}
+{% set faculties = FacultyModel.query.order_by(FacultyModel.name.asc()).all() %}
+{% set groups = UserModel.query.with_entities(UserModel.group_name).distinct().filter(UserModel.group_name != None, UserModel.group_name != '').order_by(UserModel.group_name.asc()).all() %}
+
+<section class="admin-users-page">
+    <!-- Premium Header Section -->
+    <div class="section-header row-between align-center gap-3" style="margin-bottom: 28px;">
+        <div>
+            <h1 style="margin: 0; color: #082544; font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 800;">Manage Users</h1>
+            <p class="muted" style="margin: 6px 0 0; color: #64748b;">Control access, roles, university details, and status of all platform users.</p>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="{{ url_for('librarian.add_user', source='admin') }}" class="btn btn-primary" style="height: 44px; display: inline-flex; align-items: center; gap: 8px; font-weight: 700; border-radius: 12px;">
+                <i class="fas fa-user-graduate"></i> Add User
+            </a>
+            <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary" style="height: 44px; display: inline-flex; align-items: center; gap: 8px; font-weight: 700; border-radius: 12px;">
+                <i class="fas fa-user-plus"></i> Add Librarian
+            </a>
+            <a href="{{ url_for('librarian.import_users', source='admin') }}" class="btn btn-ghost" style="height: 44px; display: inline-flex; align-items: center; gap: 8px; font-weight: 700; border-radius: 12px; border: 1.5px solid #e2e8f0; background: #ffffff; color: #0b3b6f;">
+                <i class="fas fa-file-import"></i> Import Users
+            </a>
+            <a href="{{ url_for('admin.manage_faculties') }}" class="btn btn-ghost" style="height: 44px; display: inline-flex; align-items: center; gap: 8px; font-weight: 700; border-radius: 12px; border: 1.5px solid #e2e8f0; background: #ffffff; color: #0b3b6f;">
+                <i class="fas fa-building-columns"></i> Faculties
+            </a>
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-ghost" style="height: 44px; display: inline-flex; align-items: center; gap: 8px; font-weight: 700; border-radius: 12px; border: 1.5px solid #e2e8f0; background: #ffffff; color: #0b3b6f;">
+                <i class="fas fa-arrow-left"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- KPI Stats counters -->
+    <div class="admin-kpi-grid">
+        <div class="kpi-card-pro total">
+            <div class="kpi-icon-wrap">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="kpi-details">
+                <span>Total Patrons</span>
+                <strong>{{ total_users }}</strong>
+            </div>
+        </div>
+
+        <div class="kpi-card-pro active">
+            <div class="kpi-icon-wrap">
+                <i class="fas fa-user-check"></i>
+            </div>
+            <div class="kpi-details">
+                <span>Active Patrons</span>
+                <strong>{{ active_users }}</strong>
+            </div>
+        </div>
+
+        <div class="kpi-card-pro librarians">
+            <div class="kpi-icon-wrap">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <div class="kpi-details">
+                <span>Librarians</span>
+                <strong>{{ librarian_users }}</strong>
+            </div>
+        </div>
+
+        <div class="kpi-card-pro admins">
+            <div class="kpi-icon-wrap">
+                <i class="fas fa-user-tie"></i>
+            </div>
+            <div class="kpi-details">
+                <span>Administrators</span>
+                <strong>{{ admin_users }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Filter Bar -->
+    <div class="filter-bar-card-pro">
+        <form method="GET" action="{{ url_for('admin.manage_users') }}" class="filter-bar-form-pro" id="search-filter-form">
+            <div class="search-shell">
+                <i class="fas fa-search"></i>
+                <input type="text" name="q" value="{{ q or '' }}" placeholder="Search name, email, phone..." aria-label="Search users">
+            </div>
+
+            <select id="filter-faculty" aria-label="Filter by Faculty">
+                <option value="">All Faculties</option>
+                {% for fac in faculties %}
+                    <option value="{{ fac.name }}">{{ fac.name }}</option>
+                {% endfor %}
+            </select>
+
+            <select id="filter-group" aria-label="Filter by Group">
+                <option value="">All Groups</option>
+                {% for grp in groups %}
+                    <option value="{{ grp.group_name }}">{{ grp.group_name }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="role" aria-label="Filter by role">
+                <option value="">All Roles</option>
+                <option value="user" {% if role == 'user' %}selected{% endif %}>User</option>
+                <option value="librarian" {% if role == 'librarian' %}selected{% endif %}>Librarian</option>
+                <option value="admin" {% if role == 'admin' %}selected{% endif %}>Admin</option>
+            </select>
+
+            <select name="status" aria-label="Filter by status">
+                <option value="">All Statuses</option>
+                <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+                <option value="blocked" {% if status == 'blocked' %}selected{% endif %}>Blocked</option>
+            </select>
+
+            <select id="filter-sort" aria-label="Sort users">
+                <option value="">Sort By</option>
+                <option value="name-asc">Name (A-Z)</option>
+                <option value="name-desc">Name (Z-A)</option>
+                <option value="activity-desc">Last Active</option>
+                <option value="joined-desc">Joined Date</option>
+            </select>
+
+            <div class="actions-shell">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-filter"></i> Apply
+                </button>
+                {% if q or role or status %}
+                    <a href="{{ url_for('admin.manage_users') }}" class="btn btn-ghost" style="border: 1.5px solid #e2e8f0; background: #ffffff; color: #64748b;">
+                        Reset
+                    </a>
+                {% endif %}
+                <a href="{{ url_for('admin.export_users', q=q, role=role, status=status) }}" class="btn btn-ghost" style="border: 1.5px solid #e2e8f0; background: #ffffff; color: #0b3b6f;">
+                    <i class="fas fa-file-excel"></i> Export Excel
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Form for Bulk Actions -->
+    <form id="bulk-action-form" method="POST" action="{{ url_for('admin.bulk_user_action') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="bulk_action" id="bulk-action-input" />
+
+        {% if pagination.items %}
+        <!-- DESKTOP TABLE VIEW -->
+        <div class="table-card-pro desktop-table-view">
+            <div class="table-responsive-pro">
+                <table class="premium-users-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 46px; text-align: center; border-right: none;">
+                                <input type="checkbox" id="select-all" />
+                            </th>
+                            <th>User Details</th>
+                            <th>Faculty</th>
+                            <th>Group</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Last Activity</th>
+                            <th>Joined</th>
+                            <th style="width: 80px; text-align: center;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body">
+                        {% for u in pagination.items %}
+                        <tr data-id="{{ u.id }}" 
+                            data-faculty="{{ u.faculty_display or '' }}" 
+                            data-group="{{ u.group_name or '' }}"
+                            data-fullname="{{ u.fullname }}"
+                            data-created="{{ u.created_at.timestamp() if u.created_at else 0 }}"
+                            data-activity="{{ u.last_activity_at.timestamp() if u.last_activity_at else 0 }}">
+                            <td style="text-align: center; border-right: none;">
+                                <input type="checkbox" name="ids" value="{{ u.id }}" class="row-checkbox" />
+                            </td>
+                            <td>
+                                <div class="user-identity-cell">
+                                    <div class="avatar-circle">
+                                        {% if u.avatar %}
+                                            <img src="{{ url_for('static', filename='uploads/avatars/' ~ u.avatar) }}" alt="{{ u.username }}" />
+                                        {% else %}
+                                            <span>{{ u.username[:2].upper() }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="user-names">
+                                        <strong>{{ u.fullname }}</strong>
+                                        <span>@{{ u.username }}</span>
+                                        <span class="email">{{ u.email }}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><strong>{{ u.faculty_display or '—' }}</strong></td>
+                            <td><strong>{{ u.group_name or '—' }}</strong></td>
+                            <td>
+                                <span class="badge-role {{ u.role }}">
+                                    {{ u.role }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if u.is_blocked %}
+                                    <span class="badge-status blocked">Blocked</span>
+                                {% else %}
+                                    <span class="badge-status active">Active</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="user-time-ago" data-timestamp="{{ u.last_activity_at.isoformat() if u.last_activity_at else '' }}">
+                                    Never
+                                </span>
+                            </td>
+                            <td>{{ u.created_at.strftime('%d %b %Y') if u.created_at else '—' }}</td>
+                            <td style="text-align: center;">
+                                <div class="actions-dropdown">
+                                    <button type="button" class="three-dot-toggle">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="actions-dropdown-menu">
+                                        <li>
+                                            <a href="{{ url_for('admin.edit_user', user_id=u.id) }}" class="dropdown-item">
+                                                <i class="fas fa-user-edit"></i> Edit User
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <form action="{{ url_for('admin.reset_user_password', user_id=u.id) }}" method="POST" onsubmit="return confirm('Reset password for {{ u.username }}?')">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="dropdown-item"><i class="fas fa-key"></i> Reset Password</button>
+                                            </form>
+                                        </li>
+                                        <li>
+                                            <form action="{{ url_for('admin.user_role', user_id=u.id) }}" method="POST" onsubmit="return confirm('Change user role?')">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <select name="role" onchange="if(confirm('Change role to ' + this.value + '?')) this.form.submit(); else this.value='';" class="dropdown-item" style="border:none; padding:8px 12px; font-weight: 600; color: #334155; width: 100%; height: auto; border-radius: 8px;">
+                                                    <option value="">Change Role...</option>
+                                                    <option value="user">User</option>
+                                                    <option value="librarian">Librarian</option>
+                                                    <option value="admin">Admin</option>
+                                                </select>
+                                            </form>
+                                        </li>
+                                        {% if u.id != current_user.id %}
+                                            <li>
+                                                {% if u.is_blocked %}
+                                                    <form action="{{ url_for('admin.unblock_user', user_id=u.id) }}" method="POST">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                        <button type="submit" class="dropdown-item"><i class="fas fa-user-check"></i> Activate</button>
+                                                    </form>
+                                                {% else %}
+                                                    <form action="{{ url_for('admin.block_user', user_id=u.id) }}" method="POST" onsubmit="return confirm('Block {{ u.username }}?')">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                        <button type="submit" class="dropdown-item danger"><i class="fas fa-ban"></i> Block User</button>
+                                                    </form>
+                                                {% endif %}
+                                            </li>
+                                            <li>
+                                                <form action="{{ url_for('admin.delete_user', user_id=u.id) }}" method="POST" onsubmit="return confirm('Permanently delete {{ u.username }}?')">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button type="submit" class="dropdown-item danger"><i class="fas fa-trash-can"></i> Delete User</button>
+                                                </form>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- MOBILE UX CARDS VIEW -->
+        <div class="mobile-cards-view" id="users-mobile-container">
+            {% for u in pagination.items %}
+            <div class="user-mobile-card" data-id="{{ u.id }}" 
+                 data-faculty="{{ u.faculty_display or '' }}" 
+                 data-group="{{ u.group_name or '' }}"
+                 data-fullname="{{ u.fullname }}"
+                 data-created="{{ u.created_at.timestamp() if u.created_at else 0 }}"
+                 data-activity="{{ u.last_activity_at.timestamp() if u.last_activity_at else 0 }}">
+                
+                <div class="mobile-card-header">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" name="ids" value="{{ u.id }}" class="row-checkbox" />
+                        <div class="user-identity-cell">
+                            <div class="avatar-circle">
+                                {% if u.avatar %}
+                                    <img src="{{ url_for('static', filename='uploads/avatars/' ~ u.avatar) }}" alt="{{ u.username }}" />
+                                {% else %}
+                                    <span>{{ u.username[:2].upper() }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="user-names">
+                                <strong>{{ u.fullname }}</strong>
+                                <span>@{{ u.username }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions dropdown -->
+                    <div class="actions-dropdown">
+                        <button type="button" class="three-dot-toggle">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <ul class="actions-dropdown-menu">
+                            <li>
+                                <a href="{{ url_for('admin.edit_user', user_id=u.id) }}" class="dropdown-item">
+                                    <i class="fas fa-user-edit"></i> Edit User
+                                </a>
+                            </li>
+                            <li>
+                                <form action="{{ url_for('admin.reset_user_password', user_id=u.id) }}" method="POST" onsubmit="return confirm('Reset password?')">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="dropdown-item"><i class="fas fa-key"></i> Reset Password</button>
+                                </form>
+                            </li>
+                            <li>
+                                <form action="{{ url_for('admin.user_role', user_id=u.id) }}" method="POST" onsubmit="return confirm('Change user role?')">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <select name="role" onchange="if(confirm('Change role to ' + this.value + '?')) this.form.submit(); else this.value='';" class="dropdown-item" style="border:none; padding:8px 12px; font-weight: 600; color: #334155; width: 100%; height: auto; border-radius: 8px;">
+                                        <option value="">Change Role...</option>
+                                        <option value="user">User</option>
+                                        <option value="librarian">Librarian</option>
+                                        <option value="admin">Admin</option>
+                                    </select>
+                                </form>
+                            </li>
+                            {% if u.id != current_user.id %}
+                                <li>
+                                    {% if u.is_blocked %}
+                                        <form action="{{ url_for('admin.unblock_user', user_id=u.id) }}" method="POST">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="dropdown-item"><i class="fas fa-user-check"></i> Activate</button>
+                                        </form>
+                                    {% else %}
+                                        <form action="{{ url_for('admin.block_user', user_id=u.id) }}" method="POST" onsubmit="return confirm('Block user?')">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="dropdown-item danger"><i class="fas fa-ban"></i> Block User</button>
+                                        </form>
+                                    {% endif %}
+                                </li>
+                                <li>
+                                    <form action="{{ url_for('admin.delete_user', user_id=u.id) }}" method="POST" onsubmit="return confirm('Permanently delete user?')">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="dropdown-item danger"><i class="fas fa-trash-can"></i> Delete User</button>
+                                    </form>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="mobile-card-body">
+                    <div class="mobile-info-item">
+                        <span>Role</span>
+                        <div>
+                            <span class="badge-role {{ u.role }}" style="padding: 2px 8px; font-size: 11px;">
+                                {{ u.role }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="mobile-info-item">
+                        <span>Status</span>
+                        <div>
+                            {% if u.is_blocked %}
+                                <span class="badge-status blocked" style="padding: 2px 8px; font-size: 11px;">Blocked</span>
+                            {% else %}
+                                <span class="badge-status active" style="padding: 2px 8px; font-size: 11px;">Active</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="mobile-info-item">
+                        <span>Faculty</span>
+                        <strong>{{ u.faculty_display or '—' }}</strong>
+                    </div>
+                    <div class="mobile-info-item">
+                        <span>Group</span>
+                        <strong>{{ u.group_name or '—' }}</strong>
+                    </div>
+                    <div class="mobile-info-item">
+                        <span>Last Active</span>
+                        <strong class="user-time-ago" data-timestamp="{{ u.last_activity_at.isoformat() if u.last_activity_at else '' }}">
+                            Never
+                        </strong>
+                    </div>
+                    <div class="mobile-info-item">
+                        <span>Joined</span>
+                        <strong>{{ u.created_at.strftime('%d %b %Y') if u.created_at else '—' }}</strong>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- EMPTY STATE -->
+        <div class="library-empty-pro" style="padding: 60px 20px; border-style: dashed;">
+            <i class="fas fa-users-slash" style="font-size: 48px; color: #0b3b6f; margin-bottom: 16px;"></i>
+            <h3 style="color: #082544; font-size: 22px; font-weight: 800; margin: 0 0 10px;">No Users Found</h3>
+            <p style="color: #64748b; margin: 0 0 20px; max-width: 400px; line-height: 1.5;">Create user accounts or adjust your filter queries to manage university members.</p>
+            <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary" style="font-weight: 700; border-radius: 12px; height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 0 24px;">
+                <i class="fas fa-user-plus"></i> Add User
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- STICKY BULK ACTION TOOLBAR -->
+        <div class="bulk-toolbar-pro" id="bulk-toolbar">
+            <span class="selected-count">0 Selected</span>
+            <div class="bulk-buttons">
+                <button type="button" class="btn btn-success bulk-action-btn" data-action="activate">
+                    <i class="fas fa-check"></i> Activate
+                </button>
+                <button type="button" class="btn btn-warning bulk-action-btn" data-action="deactivate">
+                    <i class="fas fa-ban"></i> Block
+                </button>
+                <button type="button" class="btn btn-danger bulk-action-btn" data-action="delete">
+                    <i class="fas fa-trash-can"></i> Delete
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Pagination -->
+    {% if pagination and pagination.pages > 1 %}
+    <div class="library-pagination-pro" style="margin-top: 30px;">
+        {% if pagination.has_prev %}
+            <a href="{{ url_for('admin.manage_users', page=pagination.prev_num, q=q, role=role, status=status) }}">
+                ← Previous
+            </a>
+        {% endif %}
+
+        <span style="font-weight: 700; color: #082544; padding: 0 16px;">
+            Page {{ pagination.page }} of {{ pagination.pages }}
+        </span>
+
+        {% if pagination.has_next %}
+            <a href="{{ url_for('admin.manage_users', page=pagination.next_num, q=q, role=role, status=status) }}">
+                Next →
+            </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</section>
+
+<!-- Redesigned Client-Side Interactive JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. URL search params sync
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialFaculty = urlParams.get('faculty') || '';
+    const initialGroup = urlParams.get('group') || '';
+    const initialSort = urlParams.get('sort') || '';
+
+    const facultySelect = document.getElementById('filter-faculty');
+    const groupSelect = document.getElementById('filter-group');
+    const sortSelect = document.getElementById('filter-sort');
+
+    if (facultySelect) facultySelect.value = initialFaculty;
+    if (groupSelect) groupSelect.value = initialGroup;
+    if (sortSelect) sortSelect.value = initialSort;
+
+    // Trigger filters and sorting
+    applyClientFilters();
+    applyClientSort();
+
+    // Event listeners
+    if (facultySelect) facultySelect.addEventListener('change', handleFilterChange);
+    if (groupSelect) groupSelect.addEventListener('change', handleFilterChange);
+    if (sortSelect) sortSelect.addEventListener('change', handleSortChange);
+
+    function handleFilterChange() {
+        applyClientFilters();
+        updateURLParams();
+    }
+
+    function handleSortChange() {
+        applyClientSort();
+        updateURLParams();
+    }
+
+    function applyClientFilters() {
+        const facultyVal = facultySelect ? facultySelect.value.toLowerCase().trim() : '';
+        const groupVal = groupSelect ? groupSelect.value.toLowerCase().trim() : '';
+
+        // Filter Table Rows
+        document.querySelectorAll('#users-table-body tr').forEach(row => {
+            const rowFaculty = (row.dataset.faculty || '').toLowerCase().trim();
+            const rowGroup = (row.dataset.group || '').toLowerCase().trim();
+            const matchFaculty = !facultyVal || rowFaculty === facultyVal;
+            const matchGroup = !groupVal || rowGroup === groupVal;
+
+            if (matchFaculty && matchGroup) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Filter Mobile Cards
+        document.querySelectorAll('#users-mobile-container .user-mobile-card').forEach(card => {
+            const cardFaculty = (card.dataset.faculty || '').toLowerCase().trim();
+            const cardGroup = (card.dataset.group || '').toLowerCase().trim();
+            const matchFaculty = !facultyVal || cardFaculty === facultyVal;
+            const matchGroup = !groupVal || cardGroup === groupVal;
+
+            if (matchFaculty && matchGroup) {
+                card.style.display = '';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+
+    function applyClientSort() {
+        const sortVal = sortSelect ? sortSelect.value : '';
+        if (!sortVal) return;
+
+        const tableBody = document.getElementById('users-table-body');
+        const mobileContainer = document.getElementById('users-mobile-container');
+
+        if (tableBody) {
+            const rows = Array.from(tableBody.querySelectorAll('tr'));
+            const sortedRows = sortElements(rows, sortVal);
+            tableBody.innerHTML = '';
+            sortedRows.forEach(row => tableBody.appendChild(row));
+        }
+
+        if (mobileContainer) {
+            const cards = Array.from(mobileContainer.querySelectorAll('.user-mobile-card'));
+            const sortedCards = sortElements(cards, sortVal);
+            mobileContainer.innerHTML = '';
+            sortedCards.forEach(card => mobileContainer.appendChild(card));
+        }
+    }
+
+    function sortElements(elements, criteria) {
+        return elements.sort((a, b) => {
+            if (criteria === 'name-asc') {
+                return a.dataset.fullname.localeCompare(b.dataset.fullname);
+            } else if (criteria === 'name-desc') {
+                return b.dataset.fullname.localeCompare(a.dataset.fullname);
+            } else if (criteria === 'activity-desc') {
+                const actA = parseFloat(a.dataset.activity) || 0;
+                const actB = parseFloat(b.dataset.activity) || 0;
+                return actB - actA;
+            } else if (criteria === 'joined-desc') {
+                const joinedA = parseFloat(a.dataset.created) || 0;
+                const joinedB = parseFloat(b.dataset.created) || 0;
+                return joinedB - joinedA;
+            }
+            return 0;
+        });
+    }
+
+    function updateURLParams() {
+        const params = new URLSearchParams(window.location.search);
+        if (facultySelect && facultySelect.value) params.set('faculty', facultySelect.value);
+        else params.delete('faculty');
+        
+        if (groupSelect && groupSelect.value) params.set('group', groupSelect.value);
+        else params.delete('group');
+        
+        if (sortSelect && sortSelect.value) params.set('sort', sortSelect.value);
+        else params.delete('sort');
+        
+        const path = window.location.pathname + '?' + params.toString();
+        history.replaceState(null, '', path);
+    }
+
+    // 2. Formatting Time-Ago dates dynamically
+    function timeAgo(dateString) {
+        if (!dateString) return 'Never';
+        const date = new Date(dateString);
+        const now = new Date();
+        const seconds = Math.floor((now - date) / 1000);
+        if (seconds < 0) return 'Just now';
+        if (seconds < 60) return 'Just now';
+        
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `${minutes}m ago`;
+        
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours}h ago`;
+        
+        const days = Math.floor(hours / 24);
+        if (days === 1) return 'Yesterday';
+        if (days < 7) return `${days}d ago`;
+        
+        return date.toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'});
+    }
+
+    document.querySelectorAll('.user-time-ago').forEach(el => {
+        const timestamp = el.getAttribute('data-timestamp');
+        if (timestamp) el.textContent = timeAgo(timestamp);
+    });
+
+    // 3. Dropdown Menu Toggle Handler
+    document.addEventListener('click', function(e) {
+        const toggle = e.target.closest('.three-dot-toggle');
+        
+        // Close all dropdowns first unless we clicked a toggle
+        if (!toggle) {
+            document.querySelectorAll('.actions-dropdown-menu.show').forEach(menu => {
+                menu.classList.remove('show');
+            });
+            return;
+        }
+
+        const dropdown = toggle.closest('.actions-dropdown');
+        const menu = dropdown.querySelector('.actions-dropdown-menu');
+        
+        // Close others
+        document.querySelectorAll('.actions-dropdown-menu.show').forEach(m => {
+            if (m !== menu) m.classList.remove('show');
+        });
+        
+        menu.classList.toggle('show');
+        e.stopPropagation();
+    });
+
+    // 4. Checkbox Selections and Sticky Bulk Actions bar
+    const selectAll = document.getElementById('select-all');
+    const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+    const bulkToolbar = document.getElementById('bulk-toolbar');
+    const selectedCountSpan = bulkToolbar.querySelector('.selected-count');
+    const bulkActionInput = document.getElementById('bulk-action-input');
+    const bulkForm = document.getElementById('bulk-action-form');
+
+    function updateToolbar() {
+        const checked = document.querySelectorAll('.row-checkbox:checked');
+        
+        // We divide count by 2 if checking identical selections on desktop and mobile views
+        // Distinct checking by user ID is much safer
+        const uniqueIds = new Set();
+        checked.forEach(cb => uniqueIds.add(cb.value));
+
+        if (uniqueIds.size > 0) {
+            bulkToolbar.classList.add('show');
+            selectedCountSpan.textContent = `${uniqueIds.size} Selected`;
+        } else {
+            bulkToolbar.classList.remove('show');
+        }
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            rowCheckboxes.forEach(cb => cb.checked = selectAll.checked);
+            updateToolbar();
+        });
+    }
+
+    // Sync checkboxes with same user_id between Desktop and Mobile card lists
+    rowCheckboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            const userId = cb.value;
+            const isChecked = cb.checked;
+            document.querySelectorAll(`.row-checkbox[value="${userId}"]`).forEach(other => {
+                other.checked = isChecked;
+            });
+            
+            if (!isChecked && selectAll) selectAll.checked = false;
+            updateToolbar();
+        });
+    });
+
+    bulkToolbar.querySelectorAll('.bulk-action-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const action = btn.getAttribute('data-action');
+            if (confirm(`Apply bulk ${action} action on selected users?`)) {
+                bulkActionInput.value = action;
+                bulkForm.submit();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

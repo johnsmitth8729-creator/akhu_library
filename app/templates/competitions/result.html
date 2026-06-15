@@ -1,0 +1,111 @@
+{% extends "layouts/base.html" %}
+{% block title %}Quiz Result — {{ competition.title }}{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/competition.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="result-page">
+    <!-- Outcome banner -->
+    <div class="result-outcome-card">
+        <div class="result-banner {% if passed %}pass{% else %}fail{% endif %}">
+            <div class="result-icon-wrap">
+                <i class="fas fa-{% if passed %}trophy{% else %}book-open{% endif %}"></i>
+            </div>
+            <h1>{% if passed %}Congratulations!{% else %}Quiz Completed{% endif %}</h1>
+            <p class="result-comp-name">{{ competition.title }}</p>
+
+            <!-- Score disc -->
+            <div class="score-disc-wrap">
+                <div class="score-disc">
+                    <div class="score-disc-pct">{{ attempt.percentage }}%</div>
+                    <div class="score-disc-lbl">Score</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Spacer for the floating disc -->
+        <div class="stats-spacer" style="background:#fff;"></div>
+    </div>
+
+    <!-- Medal display -->
+    {% if attempt.medal %}
+    <div class="medal-display {{ attempt.medal }}">
+        <i class="fas fa-medal fa-lg"></i>
+        {{ attempt.medal|capitalize }} Medal — You ranked #{{ attempt.rank_position }}
+    </div>
+    {% elif attempt.rank_position %}
+    <div class="text-center mb-3 text-slate-500 font-semibold">
+        <i class="fas fa-ranking-star me-1"></i> Rank: <strong style="color:#0f172a;">#{{ attempt.rank_position }}</strong>
+    </div>
+    {% endif %}
+
+    <!-- Stats row -->
+    <div class="result-stats">
+        <div class="result-stat">
+            <div class="stat-icon green"><i class="fas fa-circle-check"></i></div>
+            <div class="stat-val">{{ attempt.correct_count }}</div>
+            <div class="stat-lbl">Correct</div>
+        </div>
+        <div class="result-stat">
+            <div class="stat-icon red"><i class="fas fa-circle-xmark"></i></div>
+            <div class="stat-val">{{ attempt.wrong_count }}</div>
+            <div class="stat-lbl">Wrong</div>
+        </div>
+        <div class="result-stat">
+            <div class="stat-icon blue"><i class="fas fa-clock"></i></div>
+            <div class="stat-val">{{ attempt.completion_seconds or 0 }}<small style="font-size:.7rem;">s</small></div>
+            <div class="stat-lbl">Time</div>
+        </div>
+        <div class="result-stat">
+            <div class="stat-icon purple"><i class="fas fa-star"></i></div>
+            <div class="stat-val">{{ attempt.score }}</div>
+            <div class="stat-lbl">Points</div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="result-actions">
+        {% if cert %}
+        <a href="{{ url_for('competitions.download_certificate', cert_id=cert.id) }}" class="btn btn-gold btn-lg">
+            <i class="fas fa-file-pdf me-2"></i> Download Certificate
+        </a>
+        {% endif %}
+        <div class="result-actions-row">
+            <a href="{{ url_for('competitions.leaderboard', competition_id=competition.id) }}" class="btn btn-primary">
+                <i class="fas fa-crown me-1"></i> Leaderboard
+            </a>
+            <a href="{{ url_for('competitions.detail', competition_id=competition.id) }}" class="btn btn-ghost">
+                <i class="fas fa-rotate-right me-1"></i> Try Again
+            </a>
+        </div>
+        <a href="{{ url_for('competitions.index') }}" class="btn btn-ghost">
+            <i class="fas fa-list me-1"></i> All Competitions
+        </a>
+    </div>
+
+    <!-- Answer Review (if competition allows showing answers) -->
+    {% if review_items %}
+    <div class="review-card mt-3">
+        <div class="review-card-header">
+            <i class="fas fa-magnifying-glass me-2"></i>Answer Review
+        </div>
+        {% for item in review_items %}
+        <div class="review-item">
+            <div class="review-icon {% if item.correct %}correct{% else %}wrong{% endif %}">
+                <i class="fas fa-{% if item.correct %}check{% else %}times{% endif %}"></i>
+            </div>
+            <div>
+                <div class="review-q">{{ item.question_text }}</div>
+                {% if not item.correct and item.correct_answer %}
+                <div class="review-correct-label">
+                    <i class="fas fa-lightbulb me-1"></i>Correct: {{ item.correct_answer }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

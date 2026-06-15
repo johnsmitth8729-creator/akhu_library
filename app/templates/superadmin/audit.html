@@ -1,0 +1,133 @@
+{% extends "superadmin/layout.html" %}
+{% block title %}Audit Log{% endblock %}
+{% block breadcrumb %}Audit Log{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+            <div class="sa-page-title"><i class="fas fa-list-check"></i> Audit Log</div>
+            <div class="sa-page-subtitle">Full record of all administrative actions on the platform.</div>
+        </div>
+        <a href="{{ url_for('superadmin.audit_export') }}" class="sa-btn sa-btn-ghost">
+            <i class="fas fa-file-csv"></i> Export CSV
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="sa-card" style="margin-bottom:20px;">
+    <form method="get" action="{{ url_for('superadmin.audit') }}">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:12px;align-items:end;">
+            <div>
+                <label class="sa-form-label">Search</label>
+                <input name="search" value="{{ search }}" class="sa-form-input" placeholder="Action or details…">
+            </div>
+            <div>
+                <label class="sa-form-label">Module</label>
+                <select name="module" class="sa-form-select">
+                    <option value="">All Modules</option>
+                    {% for m in modules %}
+                    <option value="{{ m }}" {% if module == m %}selected{% endif %}>{{ m }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="sa-form-label">From Date</label>
+                <input type="date" name="date_from" value="{{ date_from }}" class="sa-form-input">
+            </div>
+            <div>
+                <label class="sa-form-label">To Date</label>
+                <input type="date" name="date_to" value="{{ date_to }}" class="sa-form-input">
+            </div>
+            <div>
+                <button type="submit" class="sa-btn sa-btn-primary">
+                    <i class="fas fa-search"></i> Filter
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="sa-card">
+    <div class="sa-card-title">
+        <i class="fas fa-history"></i>
+        {{ logs.total }} records found
+    </div>
+    <div class="sa-table-wrapper">
+        <table class="sa-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Admin</th>
+                    <th>Action</th>
+                    <th>Module</th>
+                    <th>IP</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs.items %}
+                <tr>
+                    <td style="white-space:nowrap;color:var(--sa-muted);font-size:12px;">
+                        {{ log.created_at.strftime('%Y-%m-%d %H:%M') if log.created_at else '—' }}
+                    </td>
+                    <td>
+                        {% if log.admin_id %}
+                        <span style="font-size:12px;">ID:{{ log.admin_id }}</span>
+                        {% else %}
+                        <span style="color:var(--sa-muted);">System</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <code style="background:rgba(108,92,231,.1);color:#a29bfe;padding:2px 8px;border-radius:4px;font-size:11px;">
+                            {{ log.action }}
+                        </code>
+                    </td>
+                    <td>
+                        {% if log.module %}
+                        <span class="sa-badge sa-badge-purple">{{ log.module }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:12px;color:var(--sa-muted);">{{ log.ip_address or '—' }}</td>
+                    <td style="font-size:12px;max-width:280px;color:var(--sa-muted);">
+                        {{ log.details or '—' }}
+                        {% if log.before_value or log.after_value %}
+                        <div style="margin-top:4px;">
+                            {% if log.before_value %}<span style="color:#ff7675;">- {{ log.before_value[:50] }}</span>{% endif %}
+                            {% if log.after_value %}<span style="color:#55efc4;">+ {{ log.after_value[:50] }}</span>{% endif %}
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" style="text-align:center;color:var(--sa-muted);padding:40px;">No log entries found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if logs.pages > 1 %}
+    <div class="sa-pagination">
+        {% if logs.has_prev %}
+        <a href="{{ url_for('superadmin.audit', page=logs.prev_num, search=search, module=module, date_from=date_from, date_to=date_to) }}">‹ Prev</a>
+        {% endif %}
+        {% for p in logs.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if p %}
+                {% if p == logs.page %}
+                <span class="current">{{ p }}</span>
+                {% else %}
+                <a href="{{ url_for('superadmin.audit', page=p, search=search, module=module, date_from=date_from, date_to=date_to) }}">{{ p }}</a>
+                {% endif %}
+            {% else %}
+            <span>…</span>
+            {% endif %}
+        {% endfor %}
+        {% if logs.has_next %}
+        <a href="{{ url_for('superadmin.audit', page=logs.next_num, search=search, module=module, date_from=date_from, date_to=date_to) }}">Next ›</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

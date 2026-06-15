@@ -1,0 +1,81 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Faculties | Admin Panel{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="section-header row-between">
+        <div>
+            <h1>Faculties</h1>
+            <p class="muted">Manage university faculties for user accounts and reporting.</p>
+        </div>
+        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i>
+            Back to Users
+        </a>
+    </div>
+
+    <div class="row" style="margin-top: 24px; display: grid; grid-template-columns: 1fr 2fr; gap: 24px;">
+        <div class="card glass" style="padding: 24px;">
+            <h2 class="h5 fw-bold mb-3">Add Faculty</h2>
+            <form method="post" action="{{ url_for('admin.manage_faculties', q=q) }}">
+                {{ form.hidden_tag() }}
+                <div class="form-group">
+                    <label>{{ form.name.label }}</label>
+                    {{ form.name(class="form-input", placeholder="Computer Engineering") }}
+                    {% for error in form.name.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Add Faculty</button>
+            </form>
+        </div>
+
+        <div class="card glass" style="padding: 0; overflow: hidden;">
+            <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <strong>All Faculties</strong>
+                <form method="get" class="d-flex gap-2">
+                    <input type="text" name="q" value="{{ q or '' }}" class="form-input" placeholder="Search...">
+                    <button type="submit" class="btn btn-primary btn-sm">Search</button>
+                </form>
+            </div>
+            <table class="table">
+                <thead>
+                    <tr><th>Name</th><th>Users</th><th class="text-end">Actions</th></tr>
+                </thead>
+                <tbody>
+                    {% for faculty in faculties %}
+                    <tr>
+                        <td>
+                            {% if editing and editing.id == faculty.id %}
+                            <form method="post" action="{{ url_for('admin.faculty_edit', faculty_id=faculty.id, q=q) }}">
+                                {{ edit_form.hidden_tag() }}
+                                <input type="hidden" name="edit_id" value="{{ faculty.id }}">
+                                <div class="d-flex gap-2">
+                                    {{ edit_form.name(class="form-input") }}
+                                    <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                                    <a href="{{ url_for('admin.manage_faculties', q=q) }}" class="btn btn-ghost btn-sm">Cancel</a>
+                                </div>
+                            </form>
+                            {% else %}
+                            {{ faculty.name }}
+                            {% endif %}
+                        </td>
+                        <td>{{ faculty.users.count() }}</td>
+                        <td class="text-end">
+                            {% if not editing or editing.id != faculty.id %}
+                            <a href="{{ url_for('admin.manage_faculties', q=q, edit=faculty.id) }}" class="btn btn-ghost btn-sm">Edit</a>
+                            <form method="post" action="{{ url_for('admin.faculty_delete', faculty_id=faculty.id, q=q) }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-ghost btn-sm text-danger" onclick="return confirm('Delete faculty?')">Delete</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3" class="text-center muted">No faculties yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

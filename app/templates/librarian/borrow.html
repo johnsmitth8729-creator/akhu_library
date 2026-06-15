@@ -1,0 +1,94 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Lend a book | Librarian Panel{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/librarian.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="librarian-area">
+    <div class="container">
+        
+        <!-- Header -->
+        <div class="page-header d-flex justify-content-between align-items-center">
+            <div>
+                <h1>Lend a Book</h1>
+                <p class="text-muted">Manually assign a physical book to a library member.</p>
+            </div>
+            <a href="{{ url_for('librarian.manage_borrowings') }}" class="btn btn-ghost">
+                <i class="fas fa-chevron-left me-2"></i> Back to Borrowings
+            </a>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-lg-6">
+                <!-- Form Card -->
+                <div class="data-card p-4 p-md-5">
+                    <div class="text-center mb-4">
+                        <div class="stat-icon mx-auto mb-3" style="width: 64px; height: 64px; background: #eff6ff; color: #3b82f6; border-radius: 16px; font-size: 1.5rem;">
+                            <i class="fas fa-hand-holding-heart"></i>
+                        </div>
+                        <h2 class="h5 fw-bold">Assign Book to Member</h2>
+                    </div>
+
+                    <form method="post" class="auth-form">
+                        {{ form.hidden_tag() }}
+
+                        <!-- User Selection -->
+                        <div class="form-group mb-4">
+                            <label class="fw-bold mb-2">{{ form.user_id.label }}</label>
+                            <div class="search-input-wrapper" style="position: relative;">
+                                <i class="fas fa-user" style="position: absolute; left: 1rem; top: 1.1rem; color: #94a3b8;"></i>
+                                {{ form.user_id(class="form-input-full", style="padding-left: 2.8rem;") }}
+                            </div>
+                            {% for error in form.user_id.errors %}<span class="text-danger small">{{ error }}</span>{% endfor %}
+                        </div>
+
+                        <!-- Book Selection -->
+                        <div class="form-group mb-4">
+                            <label class="fw-bold mb-2">{{ form.book_id.label }}</label>
+                            <div class="search-input-wrapper" style="position: relative;">
+                                <i class="fas fa-book" style="position: absolute; left: 1rem; top: 1.1rem; color: #94a3b8;"></i>
+                                {{ form.book_id(class="form-input-full", style="padding-left: 2.8rem;") }}
+                            </div>
+                            {% for error in form.book_id.errors %}<span class="text-danger small">{{ error }}</span>{% endfor %}
+                        </div>
+
+                        <!-- Duration -->
+                        <div class="form-group mb-5">
+                            <label class="fw-bold mb-2">{{ form.days.label }}</label>
+                            <div class="search-input-wrapper" style="position: relative;">
+                                <i class="fas fa-calendar-alt" style="position: absolute; left: 1rem; top: 1.1rem; color: #94a3b8;"></i>
+                                {{ form.days(class="form-input-full", style="padding-left: 2.8rem;", placeholder="e.g. 14") }}
+                            </div>
+                            <div class="form-text small text-muted mt-2">
+                                <i class="fas fa-info-circle me-1"></i> Standard borrowing period is 14 days.
+                            </div>
+                            {% for error in form.days.errors %}<span class="text-danger small">{{ error }}</span>{% endfor %}
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary py-3 fw-bold" type="submit">
+                                <i class="fas fa-check-circle me-2"></i> Confirm Lending
+                            </button>
+                            <a href="{{ url_for('librarian.dashboard') }}" class="btn btn-ghost py-2">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Info Box -->
+                <div class="mt-4 p-3 border-start border-primary border-4 bg-white rounded shadow-sm">
+                    <p class="small text-muted mb-0">
+                        <strong>Note:</strong> Manual lending bypasses the user request system. Use this only when the member is physically present at the library.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

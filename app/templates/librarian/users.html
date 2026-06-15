@@ -1,0 +1,191 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Users | Librarian Panel{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/librarian.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="librarian-area">
+    <div class="container">
+
+        <!-- HEADER -->
+        <div class="lm-users-header">
+            <div class="lm-users-header-text">
+                <h1>Users</h1>
+                <p class="text-muted">Manage library member accounts — created manually or via Excel import.</p>
+            </div>
+            <div class="lm-users-header-actions">
+                <a href="{{ url_for('librarian.add_user', source='librarian') }}" class="btn btn-primary lm-users-action-btn">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Add User</span>
+                </a>
+                <a href="{{ url_for('librarian.import_users', source='librarian') }}" class="btn btn-gold lm-users-action-btn">
+                    <i class="fas fa-file-excel"></i>
+                    <span>Import</span>
+                </a>
+                <a href="{{ url_for('librarian.dashboard') }}" class="btn btn-ghost lm-users-action-btn">
+                    <i class="fas fa-chevron-left"></i>
+                    <span>Dashboard</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- FILTER CARD -->
+        <div class="filters-card lm-users-filter-card">
+            <form method="get" class="lm-users-filter-form">
+                <div class="search-input-wrapper lm-users-search-wrapper">
+                    <i class="fas fa-search"></i>
+                    <input type="text" name="q" value="{{ q or '' }}"
+                        placeholder="Search name, username, email, phone, group..."
+                        class="form-input-full">
+                </div>
+                <select name="faculty" class="filter-select lm-users-faculty-select">
+                    <option value="">All Faculties</option>
+                    {% for f in faculties %}
+                    <option value="{{ f.id }}" {% if faculty_id == f.id %}selected{% endif %}>{{ f.name }}</option>
+                    {% endfor %}
+                </select>
+                <div class="lm-users-filter-actions">
+                    <button type="submit" class="btn btn-primary lm-users-filter-btn fw-bold">
+                        <i class="fas fa-filter"></i>
+                        <span>Filter</span>
+                    </button>
+                    {% if q or faculty_id %}
+                    <a href="{{ url_for('librarian.manage_users') }}" class="btn btn-ghost lm-users-reset-btn" title="Clear filters">
+                        <i class="fas fa-times"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
+        <!-- TABLE / MOBILE CARDS -->
+        <div class="data-card lm-users-data-card">
+
+            <!-- Card header -->
+            <div class="lm-users-card-header">
+                <h2 class="lm-users-card-title">User Accounts</h2>
+                <span class="lm-cat-count-badge">{{ pagination.total }} Total</span>
+            </div>
+
+            <!-- Desktop table -->
+            <div class="table-responsive lm-users-desktop-table">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Full Name</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Faculty</th>
+                            <th>Group</th>
+                            <th>Joined</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in pagination.items %}
+                        <tr>
+                            <td><span class="fw-bold">{{ u.fullname }}</span></td>
+                            <td><code style="font-size: 0.82rem;">{{ u.username }}</code></td>
+                            <td><span class="text-muted">{{ u.email }}</span></td>
+                            <td>{{ u.phone_number or '—' }}</td>
+                            <td>{{ u.faculty_display or '—' }}</td>
+                            <td>
+                                {% if u.group_name %}
+                                <span class="badge-custom" style="background: var(--gray-100); color: var(--gray-700);">{{ u.group_name }}</span>
+                                {% else %}—{% endif %}
+                            </td>
+                            <td class="text-muted" style="font-size: 0.85rem; white-space: nowrap;">
+                                {{ u.created_at.strftime('%d %b %Y') if u.created_at else '—' }}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5">
+                                <div class="empty-state-container" style="padding: 2rem 1rem;">
+                                    <div class="empty-state-icon" style="background: rgba(11, 59, 111, 0.05); color: var(--royal);">
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                    <h3>No users found</h3>
+                                    <p class="text-muted mb-0">Try adjusting filters or add users manually.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Mobile user cards -->
+            <div class="lm-users-mobile-cards">
+                {% for u in pagination.items %}
+                <div class="lm-user-card">
+                    <!-- Avatar + name row -->
+                    <div class="lm-user-card-top">
+                        <div class="lm-user-card-avatar">
+                            {{ u.fullname[0].upper() if u.fullname else '?' }}
+                        </div>
+                        <div class="lm-user-card-identity">
+                            <span class="lm-user-card-name">{{ u.fullname }}</span>
+                            <code class="lm-user-card-username">@{{ u.username }}</code>
+                        </div>
+                        {% if u.group_name %}
+                        <span class="lm-user-card-group">{{ u.group_name }}</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Detail rows -->
+                    <div class="lm-user-card-details">
+                        <div class="lm-user-card-row">
+                            <span class="lm-user-card-label"><i class="fas fa-envelope"></i> Email</span>
+                            <span class="lm-user-card-value">{{ u.email or '—' }}</span>
+                        </div>
+                        <div class="lm-user-card-row">
+                            <span class="lm-user-card-label"><i class="fas fa-phone"></i> Phone</span>
+                            <span class="lm-user-card-value">{{ u.phone_number or '—' }}</span>
+                        </div>
+                        <div class="lm-user-card-row">
+                            <span class="lm-user-card-label"><i class="fas fa-university"></i> Faculty</span>
+                            <span class="lm-user-card-value lm-user-card-faculty">{{ u.faculty_display or '—' }}</span>
+                        </div>
+                        <div class="lm-user-card-row lm-user-card-row-last">
+                            <span class="lm-user-card-label"><i class="fas fa-calendar-alt"></i> Joined</span>
+                            <span class="lm-user-card-value">{{ u.created_at.strftime('%d %b %Y') if u.created_at else '—' }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="lm-cat-empty" style="padding: 3rem 1.5rem;">
+                    <div class="lm-cat-empty-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <p class="lm-cat-empty-title">No users found</p>
+                    <p class="lm-cat-empty-sub">Try adjusting filters or add users manually.</p>
+                </div>
+                {% endfor %}
+            </div>
+
+        </div>
+
+        <!-- PAGINATION -->
+        {% if pagination.pages > 1 %}
+        <div class="pagination-wrapper">
+            {% if pagination.has_prev %}
+            <a href="{{ url_for('librarian.manage_users', page=pagination.prev_num, q=q, faculty=faculty_id) }}" class="page-btn">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+            {% endif %}
+            <div class="page-info">Page <strong>{{ pagination.page }}</strong> of {{ pagination.pages }}</div>
+            {% if pagination.has_next %}
+            <a href="{{ url_for('librarian.manage_users', page=pagination.next_num, q=q, faculty=faculty_id) }}" class="page-btn">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

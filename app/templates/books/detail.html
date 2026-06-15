@@ -1,0 +1,360 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+{{ book.title }} | Al-Khwarizmi Smart Library
+{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/book.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="book-detail-back-row">
+    <a class="page-back-btn" href="{{ url_for('books.index') }}" id="detailBackBtn">
+        <i class="fas fa-arrow-left"></i>
+        Back to Library
+    </a>
+</div>
+
+<div class="library-shell-pro">
+    <section class="book-detail-pro">
+    <div class="book-detail-cover-panel">
+        <div class="book-detail-cover-wrap">
+            {% if book.cover_image %}
+                <img
+                    src="{{ url_for('static', filename=book.cover_image) }}"
+                    alt="{{ book.title }}"
+                    class="book-detail-cover-img"
+                >
+            {% else %}
+                <div class="book-detail-cover-placeholder">
+                    {{ book.title[:1] }}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="book-detail-cover-meta">
+            <div>
+                <span>Rating</span>
+                <strong>★ {{ book.rating or 0 }}</strong>
+            </div>
+
+            {% if book.book_type == "physical" %}
+                <div>
+                    <span>Available</span>
+                    <strong>{{ book.available_quantity }}/{{ book.quantity }}</strong>
+                </div>
+            {% else %}
+                <div>
+                    <span>Readers</span>
+                    <strong>{{ unique_readers if unique_readers is not none else 0 }}</strong>
+                </div>
+                <div>
+                    <span>Views</span>
+                    <strong>{{ book.view_count or 0 }}</strong>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="book-detail-info-panel">
+        <div class="book-detail-badges">
+            {% if book.book_type == "physical" %}
+                <span class="badge blue">Physical Book</span>
+            {% else %}
+                <span class="badge gold">Digital PDF</span>
+            {% endif %}
+
+            {% if book.category %}
+                <span class="badge gray">{{ book.category.name }}</span>
+            {% endif %}
+        </div>
+
+        <h1 class="book-detail-title">
+            {{ book.title }}
+        </h1>
+
+        <p class="book-detail-author">
+            by <strong>{{ book.author.fullname if book.author else "Unknown Author" }}</strong>
+        </p>
+
+        <div class="book-detail-meta-grid">
+            <div class="book-detail-meta-card">
+                <span>ISBN</span>
+                <strong>{{ book.isbn or "—" }}</strong>
+            </div>
+
+            <div class="book-detail-meta-card">
+                <span>Language</span>
+                <strong>{{ book.language or "—" }}</strong>
+            </div>
+
+            <div class="book-detail-meta-card">
+                <span>Published</span>
+                <strong>{{ book.published_year or "—" }}</strong>
+
+            {% if book.book_type == "physical" %}
+                <div class="book-detail-meta-card">
+                    <span>Copy NN Numbers</span>
+                    <strong>
+                        {% set copy_numbers = book.copies.all()|map(attribute='nn_number')|list %}
+                        {{ copy_numbers|join(', ') if copy_numbers else "—" }}
+                    </strong>
+                </div>
+
+                <div class="book-detail-meta-card">
+                    <span>Shelf</span>
+                    <strong>{{ book.shelf_code or "—" }}</strong>
+                </div>
+
+                <div class="book-detail-meta-card">
+                    <span>Borrowed</span>
+                    <strong>{{ book.borrow_count or 0 }}</strong>
+                </div>
+            {% else %}
+                <div class="book-detail-meta-card">
+                    <span>Access</span>
+                    {% if book.online_read_only %}
+                    <strong>Online read only</strong>
+                    {% elif book.allow_download %}
+                    <strong>Download allowed</strong>
+                    {% else %}
+                    <strong>Read online</strong>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="book-detail-description">
+            <h2>Description</h2>
+            <p>{{ book.description or "No description provided." }}</p>
+        </div>
+
+        <div class="book-detail-actions">
+            {% if book.book_type == "physical" %}
+                {% if current_user.is_authenticated %}
+                    {% if user_active_borrow %}
+                        <button class="btn btn-primary btn-lg" disabled>
+                            <i class="fas fa-check-circle"></i>
+                            Already Borrowed
+                        </button>
+                    {% elif user_pending_request %}
+                        <button class="btn btn-gold btn-lg" disabled>
+                            <i class="fas fa-hourglass-half"></i>
+                            Pending Approval
+                        </button>
+                    {% elif user_queued_request %}
+                        <button class="btn btn-ghost btn-lg" disabled>
+                            <i class="fas fa-list-ol"></i>
+                            In Waiting List
+                        </button>
+                    {% elif book.available_quantity > 0 %}
+                        <form
+                            method="POST"
+                            action="{{ url_for('books.request_borrow', book_id=book.id) }}"
+                        >
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                            <button
+                                type="submit"
+                                class="btn btn-primary btn-lg"
+                                onclick="return confirm('Reserve this book?')"
+                            >
+                                <i class="fas fa-bookmark"></i>
+                                Reserve Book
+                            </button>
+                        </form>
+                    {% else %}
+                        <form
+                            method="POST"
+                            action="{{ url_for('books.request_borrow', book_id=book.id) }}"
+                        >
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                            <button
+                                type="submit"
+                                class="btn btn-gold btn-lg"
+                                onclick="return confirm('Join the waiting list for this book?')"
+                            >
+                                <i class="fas fa-list-ol"></i>
+                                Join Waiting List
+                            </button>
+                        </form>
+                    {% endif %}
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-arrow-right-to-bracket"></i>
+                        Login to Reserve
+                    </a>
+                {% endif %}
+            {% else %}
+                {% if current_user.is_authenticated %}
+                    <a
+                        href="{{ url_for('books.read_digital_book', book_id=book.id) }}"
+                        class="btn btn-gold btn-lg"
+                    >
+                        <i class="fas fa-book-open-reader"></i>
+                        Read Online
+                    </a>
+
+                    {% if can_download_digital %}
+                        <a
+                            href="{{ url_for('books.download_digital_book', book_id=book.id) }}"
+                            class="btn btn-primary btn-lg"
+                        >
+                            <i class="fas fa-download"></i>
+                            Download PDF
+                        </a>
+                    {% elif book.online_read_only %}
+                        <span class="btn btn-ghost btn-lg" title="Copyright protection">
+                            <i class="fas fa-shield-halved"></i>
+                            Protected — no download
+                        </span>
+                    {% endif %}
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-arrow-right-to-bracket"></i>
+                        Login to Read
+                    </a>
+                {% endif %}
+            {% endif %}
+
+            {% if current_user.is_authenticated %}
+                <form
+                    method="POST"
+                    action="{{ url_for('books.toggle_favorite', book_id=book.id) }}"
+                >
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <button
+                        class="btn {% if is_favorite %}btn-danger{% else %}btn-ghost{% endif %} btn-lg"
+                        type="submit"
+                    >
+                        {% if is_favorite %}
+                            <i class="fas fa-heart"></i>
+                            Remove Favorite
+                        {% else %}
+                            <i class="far fa-heart"></i>
+                            Add Favorite
+                        {% endif %}
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
+</section>
+<div class="library-empty-pro" style="display:none;"></div>
+</div>
+
+<section class="book-reviews-pro">
+    <div class="section-header">
+        <div>
+            <h2>Reviews & Ratings</h2>
+            <p class="muted">Share your thoughts and read feedback from other readers.</p>
+        </div>
+    </div>
+
+    {% if current_user.is_authenticated %}
+        <div class="review-form-pro">
+            <h3>Write Your Review</h3>
+
+            <form
+                method="POST"
+                action="{{ url_for('books.add_review', book_id=book.id) }}"
+            >
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="review-form-grid">
+                    <label>
+                        Rating
+                        <select name="rating" required class="form-select">
+                            <option value="">Select Rating</option>
+                            <option value="5">★★★★★ Excellent</option>
+                            <option value="4">★★★★ Very Good</option>
+                            <option value="3">★★★ Good</option>
+                            <option value="2">★★ Fair</option>
+                            <option value="1">★ Poor</option>
+                        </select>
+                    </label>
+
+                    <label>
+                        Comment
+                        <textarea
+                            name="comment"
+                            rows="4"
+                            class="form-textarea"
+                            placeholder="Write your thoughts about this book..."
+                        ></textarea>
+                    </label>
+                </div>
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                    onclick="return confirm('Submit your review?')"
+                >
+                    Submit Review
+                </button>
+            </form>
+        </div>
+    {% endif %}
+
+    {% if reviews %}
+        <div class="reviews-grid-pro">
+            {% for review in reviews %}
+                <article class="review-card-pro">
+                    <div class="review-card-top">
+                        <div>
+                            <strong>{{ review.user.fullname }}</strong>
+                            <span>{{ review.created_at.strftime('%d %b %Y') }}</span>
+                        </div>
+
+                        <span class="review-rating">★ {{ review.rating }}/5</span>
+                    </div>
+
+                    <p>{{ review.comment or "No comment provided." }}</p>
+
+                    {% if current_user.is_authenticated and review.user_id == current_user.id %}
+                        <form
+                            method="POST"
+                            action="{{ url_for('books.delete_review', review_id=review.id) }}"
+                        >
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                            <button
+                                class="btn btn-danger btn-sm"
+                                type="submit"
+                                onclick="return confirm('Delete your review?')"
+                            >
+                                Delete Review
+                            </button>
+                        </form>
+                    {% endif %}
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="reviews-empty-pro">
+            <i class="far fa-comment-dots" style="font-size: 28px; display: block; margin-bottom: 12px; color: var(--akhu-royal);"></i>
+            No reviews yet. Be the first to share your thoughts about this book!
+        </div>
+    {% endif %}
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (function () {
+        var btn = document.getElementById('detailBackBtn');
+        if (btn && window.history && window.history.length > 1) {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                window.history.back();
+            });
+        }
+    })();
+</script>
+{% endblock %}

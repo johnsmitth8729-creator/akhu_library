@@ -1,0 +1,148 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+Notifications
+{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="user-dashboard-pro">
+
+    <div class="dashboard-hero-pro notifications-hero-pro">
+        <div class="dashboard-hero-content">
+            <span class="dashboard-kicker">
+                Library Alerts
+            </span>
+
+            <h1>
+                Notifications
+            </h1>
+
+            <p>
+                Stay updated with requests, approvals, returns and important library activity.
+            </p>
+
+            <div class="dashboard-hero-actions">
+                <a href="{{ url_for('user.dashboard') }}" class="btn btn-primary">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Dashboard
+                </a>
+
+                <a href="{{ url_for('books.index') }}" class="btn btn-ghost">
+                    <i class="fas fa-book-open"></i>
+                    Browse Library
+                </a>
+            </div>
+        </div>
+
+        <div class="dashboard-hero-panel">
+            <div class="hero-panel-icon">
+                <i class="fas fa-bell"></i>
+            </div>
+
+            <div>
+                <span>Total Notifications</span>
+                <strong>{{ notifications|length }}</strong>
+                <p>Updates from your library account</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="notifications-page-shell">
+        {% if notifications %}
+            <div class="dashboard-stats-pro notifications-summary-grid">
+                <div class="dash-stat-card active">
+                    <div class="dash-stat-icon">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <div>
+                        <span>All Updates</span>
+                        <strong>{{ notification_summary.all }}</strong>
+                    </div>
+                </div>
+
+                <div class="dash-stat-card fine">
+                    <div class="dash-stat-icon">
+                        <i class="fas fa-circle-check"></i>
+                    </div>
+                    <div>
+                        <span>Success</span>
+                        <strong>{{ notification_summary.success }}</strong>
+                    </div>
+                </div>
+
+                <div class="dash-stat-card pending">
+                    <div class="dash-stat-icon">
+                        <i class="fas fa-triangle-exclamation"></i>
+                    </div>
+                    <div>
+                        <span>Warnings</span>
+                        <strong>{{ notification_summary.warning }}</strong>
+                    </div>
+                </div>
+
+                <div class="dash-stat-card overdue">
+                    <div class="dash-stat-icon">
+                        <i class="fas fa-shield-exclamation"></i>
+                    </div>
+                    <div>
+                        <span>Critical</span>
+                        <strong>{{ notification_summary.danger }}</strong>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if notifications %}
+            <div class="notifications-timeline-pro">
+                {% for notification in notifications %}
+                    <article class="notification-page-card-pro {{ notification.type }}">
+                        <span class="notification-page-icon">
+                            {% if notification.type == "success" %}
+                                <i class="fas fa-check"></i>
+                            {% elif notification.type == "warning" %}
+                                <i class="fas fa-triangle-exclamation"></i>
+                            {% elif notification.type == "danger" %}
+                                <i class="fas fa-circle-exclamation"></i>
+                            {% else %}
+                                <i class="fas fa-info"></i>
+                            {% endif %}
+                        </span>
+
+                        <div class="notification-page-body">
+                            <p>
+                                {{ notification.message }}
+                            </p>
+
+                            <span>
+                                <i class="far fa-clock"></i>
+                                {{ notification.created_at.strftime('%d %b %Y %H:%M') }}
+                            </span>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="dashboard-empty notifications-empty-pro">
+                <i class="fas fa-bell-slash"></i>
+
+                <h3>
+                    No notifications found.
+                </h3>
+
+                <p>
+                    When there are updates about your requests, borrowed books or deadlines, they will appear here.
+                </p>
+
+                <a href="{{ url_for('user.dashboard') }}" class="btn btn-primary">
+                    Back to Dashboard
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+</section>
+{% endblock %}

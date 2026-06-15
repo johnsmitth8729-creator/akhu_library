@@ -1,0 +1,143 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+My Favorites | Al-Khwarizmi Smart Library
+{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="user-dashboard-pro">
+
+    <div class="dashboard-hero-pro favorites-hero-pro">
+        <div class="dashboard-hero-content">
+            <span class="dashboard-kicker">
+                Saved Reading List
+            </span>
+
+            <h1>
+                My Favorite Books
+            </h1>
+
+            <p>
+                Books you saved for later reading, research and inspiration.
+            </p>
+
+            <div class="dashboard-hero-actions">
+                <a href="{{ url_for('books.index') }}" class="btn btn-primary">
+                    <i class="fas fa-search"></i>
+                    Browse Library
+                </a>
+
+                <a href="{{ url_for('user.dashboard') }}" class="btn btn-ghost">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Dashboard
+                </a>
+            </div>
+        </div>
+
+        <div class="dashboard-hero-panel">
+            <div class="hero-panel-icon">
+                <i class="fas fa-heart"></i>
+            </div>
+
+            <div>
+                <span>Saved Books</span>
+                <strong>{{ favorites|length }}</strong>
+                <p>Books in your favorites list</p>
+            </div>
+        </div>
+    </div>
+
+    {% if favorites %}
+        <div class="favorites-page-grid-pro">
+            {% for fav in favorites %}
+                {% set book = fav.book %}
+
+                <article class="favorite-page-card-pro">
+                    <a
+                        href="{{ url_for('books.detail', book_id=book.id) }}"
+                        class="favorite-page-cover"
+                    >
+                        {% if book.cover_image %}
+                            <img
+                                src="{{ url_for('static', filename=book.cover_image) }}"
+                                alt="{{ book.title }}"
+                                loading="lazy"
+                            >
+                        {% else %}
+                            <span>{{ book.title[:1] }}</span>
+                        {% endif %}
+                    </a>
+
+                    <form
+                        method="post"
+                        action="{{ url_for('books.toggle_favorite', book_id=book.id) }}"
+                        class="favorite-remove-form"
+                    >
+                        <input
+                            type="hidden"
+                            name="csrf_token"
+                            value="{{ csrf_token() }}"
+                        >
+
+                        <button
+                            type="submit"
+                            class="favorite-remove-btn"
+                            title="Remove from favorites"
+                        >
+                            <i class="fas fa-heart"></i>
+                        </button>
+                    </form>
+
+                    <div class="favorite-page-info">
+                        <div class="favorite-meta-row">
+                            <span class="badge blue">
+                                {{ book.category.name if book.category else "Uncategorized" }}
+                            </span>
+
+                            <span class="rating-badge">
+                                ★ {{ book.rating or 0 }}
+                            </span>
+                        </div>
+
+                        <h3>
+                            <a href="{{ url_for('books.detail', book_id=book.id) }}">
+                                {{ book.title }}
+                            </a>
+                        </h3>
+
+                        <p>
+                            {{ book.author.fullname if book.author else "Unknown Author" }}
+                        </p>
+
+                        <div class="favorite-saved-date">
+                            <i class="fas fa-bookmark"></i>
+                            Saved on {{ fav.created_at.strftime('%d %b %Y') }}
+                        </div>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="dashboard-empty favorites-empty-pro">
+            <i class="far fa-heart"></i>
+
+            <h3>
+                No favorites yet
+            </h3>
+
+            <p>
+                You have not added any books to your favorites list yet. Start exploring and save books you are interested in.
+            </p>
+
+            <a href="{{ url_for('books.index') }}" class="btn btn-primary">
+                Browse Library
+            </a>
+        </div>
+    {% endif %}
+
+</section>
+{% endblock %}

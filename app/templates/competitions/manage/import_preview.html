@@ -1,0 +1,162 @@
+{% extends "layouts/base.html" %}
+{% block title %}Import Preview — AKHU Library{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/competition.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="import-page">
+
+    <!-- Hero -->
+    <div class="import-hero">
+        <a href="{{ url_for('questions.import_questions') }}" class="btn btn-ghost btn-sm mb-3" style="color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.25);">
+            <i class="fas fa-arrow-left me-1"></i> Back to Upload
+        </a>
+        <h1><i class="fas fa-list-check me-2"></i>Import Preview</h1>
+        <p>Review the parsed questions before importing them into the question bank.</p>
+    </div>
+
+    <!-- Summary bar -->
+    <div class="import-summary-bar">
+        <div class="import-sum-chip">
+            <div class="chip-icon blue"><i class="fas fa-table"></i></div>
+            <div>
+                <div class="chip-val">{{ preview|length }}</div>
+                <div class="chip-lbl">Total Rows</div>
+            </div>
+        </div>
+        <div class="import-sum-chip">
+            <div class="chip-icon green"><i class="fas fa-circle-check"></i></div>
+            <div>
+                <div class="chip-val">{{ preview|selectattr('valid')|list|length }}</div>
+                <div class="chip-lbl">Valid</div>
+            </div>
+        </div>
+        <div class="import-sum-chip">
+            <div class="chip-icon red"><i class="fas fa-circle-xmark"></i></div>
+            <div>
+                <div class="chip-val">{{ preview|rejectattr('valid')|list|length }}</div>
+                <div class="chip-lbl">Errors</div>
+            </div>
+        </div>
+        <div class="import-sum-chip">
+            <div class="chip-icon gold"><i class="fas fa-file-excel"></i></div>
+            <div>
+                <div class="chip-val">{{ filename or 'file.xlsx' }}</div>
+                <div class="chip-lbl">File</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error notice if any -->
+    {% set error_count = preview|rejectattr('valid')|list|length %}
+    {% if error_count > 0 %}
+    <div class="d-flex align-items-start gap-3 p-3 rounded-3 mb-3"
+         style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.15);">
+        <i class="fas fa-triangle-exclamation mt-1" style="color:#ef4444;flex-shrink:0;"></i>
+        <div>
+            <strong class="text-sm" style="color:#b91c1c;">{{ error_count }} row{{ 's' if error_count != 1 }} have errors</strong>
+            <p class="text-sm mb-0" style="color:#7f1d1d;">Rows with errors will be skipped. Fix the file and re-upload, or confirm to import only valid rows.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Preview table -->
+    <div class="preview-import-table-wrap">
+        <table class="preview-table">
+            <thead>
+                <tr>
+                    <th style="width:42px;">#</th>
+                    <th>Question Text</th>
+                    <th style="width:110px;">Type</th>
+                    <th style="width:60px;">Points</th>
+                    <th>Options Preview</th>
+                    <th style="width:80px;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in preview %}
+                <tr class="{{ 'row-error' if not row.valid else 'row-ok' }}">
+                    <td class="text-slate-400 fw-bold">{{ loop.index }}</td>
+                    <td>
+                        <div style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;">
+                            {{ row.question_text or '—' }}
+                        </div>
+                        {% if not row.valid and row.error %}
+                        <div class="small mt-1" style="color:#dc2626;"><i class="fas fa-exclamation-circle me-1"></i>{{ row.error }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="qbank-badge-type {{ row.question_type or 'single' }}">
+                            {{ (row.question_type or 'single')|replace('_',' ')|title }}
+                        </span>
+                    </td>
+                    <td class="fw-bold" style="color:#1e40af;">{{ row.points or 1 }}</td>
+                    <td>
+                        {% if row.options %}
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for opt in row.options[:4] %}
+                            <span style="background:{% if opt.is_correct %}rgba(16,185,129,.08){% else %}#f1f5f9{% endif %};
+                                         border:1px solid {% if opt.is_correct %}#a7f3d0{% else %}#e2e8f0{% endif %};
+                                         border-radius:6px; padding:.15rem .5rem; font-size:.74rem; color:{% if opt.is_correct %}#065f46{% else %}#475569{% endif %}; font-weight:600;">
+                                {% if opt.is_correct %}<i class="fas fa-check me-1" style="font-size:.65rem;"></i>{% endif %}{{ opt.text|truncate(22) }}
+                            </span>
+                            {% endfor %}
+                            {% if row.options|length > 4 %}
+                            <span class="text-slate-400 small">+{{ row.options|length - 4 }} more</span>
+                            {% endif %}
+                        </div>
+                        {% else %}—{% endif %}
+                    </td>
+                    <td>
+                        {% if row.valid %}
+                        <span class="preview-row-status ok"><i class="fas fa-check"></i> OK</span>
+                        {% else %}
+                        <span class="preview-row-status err"><i class="fas fa-xmark"></i> Error</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center text-slate-400 py-4">No rows found in file.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Confirm form -->
+    {% set valid_count = preview|selectattr('valid')|list|length %}
+    {% if valid_count > 0 %}
+    <div class="import-guide-card">
+        <div class="import-guide-body">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                    <p class="fw-bold mb-1" style="color:#0f172a;">Ready to import <span style="color:#2563eb;">{{ valid_count }} valid question{{ 's' if valid_count != 1 }}</span></p>
+                    {% if error_count > 0 %}
+                    <p class="small text-slate-400 mb-0">{{ error_count }} invalid row{{ 's' if error_count != 1 }} will be skipped.</p>
+                    {% endif %}
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('questions.import_questions') }}" class="btn btn-ghost">
+                        <i class="fas fa-rotate-left me-1"></i> Re-upload
+                    </a>
+                    <form method="post" action="{{ url_for('questions.import_confirm') }}" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-file-import me-1"></i> Confirm Import
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-4">
+        <p class="text-slate-400 mb-3"><i class="fas fa-file-circle-xmark fa-2x d-block mb-2"></i>No valid rows to import.</p>
+        <a href="{{ url_for('questions.import_questions') }}" class="btn btn-primary">
+            <i class="fas fa-rotate-left me-1"></i> Upload a different file
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

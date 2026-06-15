@@ -1,0 +1,122 @@
+{% extends "layouts/base.html" %}
+{% block title %}Leaderboard — {{ competition.title }}{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/competition.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="lb-page">
+    <!-- Hero banner with podium -->
+    <div class="lb-hero">
+        <h1><i class="fas fa-crown me-2"></i>{{ competition.title }}</h1>
+        <p>Top performers and live rankings</p>
+        {% if my_rank %}
+        <div class="my-rank-pill">
+            <i class="fas fa-user-circle"></i>
+            Your rank: <span class="rank-num">#{{ my_rank.rank_position }}</span>
+            &nbsp;·&nbsp; {{ my_rank.percentage }}%
+        </div>
+        {% endif %}
+
+        <!-- Podium -->
+        {% if rows|length > 0 %}
+        {% set top1 = rows[0] if rows|length > 0 else none %}
+        {% set top2 = rows[1] if rows|length > 1 else none %}
+        {% set top3 = rows[2] if rows|length > 2 else none %}
+        <div class="podium-stage">
+            <!-- 2nd place -->
+            <div class="podium-block p2">
+                {% if top2 %}
+                <div class="podium-avatar-ring">{{ (top2.user.fullname[0]|upper) if top2.user else '?' }}</div>
+                <div class="podium-name">{{ top2.user.fullname.split()[0] if top2.user else '—' }}</div>
+                <div class="podium-pct">{{ top2.percentage }}%</div>
+                {% endif %}
+                <div class="podium-base">2</div>
+            </div>
+            <!-- 1st place -->
+            <div class="podium-block p1">
+                {% if top1 %}
+                <div class="podium-avatar-ring">
+                    <span class="podium-crown"><i class="fas fa-crown"></i></span>
+                    {{ (top1.user.fullname[0]|upper) if top1.user else '?' }}
+                </div>
+                <div class="podium-name">{{ top1.user.fullname.split()[0] if top1.user else '—' }}</div>
+                <div class="podium-pct">{{ top1.percentage }}%</div>
+                {% endif %}
+                <div class="podium-base">1</div>
+            </div>
+            <!-- 3rd place -->
+            <div class="podium-block p3">
+                {% if top3 %}
+                <div class="podium-avatar-ring">{{ (top3.user.fullname[0]|upper) if top3.user else '?' }}</div>
+                <div class="podium-name">{{ top3.user.fullname.split()[0] if top3.user else '—' }}</div>
+                <div class="podium-pct">{{ top3.percentage }}%</div>
+                {% endif %}
+                <div class="podium-base">3</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Full rankings list -->
+    <div class="lb-list-card">
+        <div class="lb-list-header">
+            <h2>Full Rankings</h2>
+            <div class="lb-search">
+                <i class="fas fa-search"></i>
+                <input type="text" id="lbSearch" placeholder="Search participant…" oninput="filterLb()">
+            </div>
+        </div>
+
+        {% if rows %}
+        <div id="lbList">
+            {% for row in rows %}
+            {% set medal_class = 'gold' if row.rank_position == 1 else ('silver' if row.rank_position == 2 else ('bronze' if row.rank_position == 3 else '')) %}
+            <div class="lb-row {% if my_rank and row.rank_position == my_rank.rank_position %}is-me{% endif %}"
+                 data-name="{{ (row.user.fullname|lower) if row.user else '' }}">
+                <div class="lb-rank-num {{ medal_class }}">{{ row.rank_position }}</div>
+                <div class="lb-user-col">
+                    <div class="lb-user-name">
+                        {{ row.user.fullname if row.user else '—' }}
+                        {% if my_rank and row.rank_position == my_rank.rank_position %}
+                        <span style="font-size:.7rem;color:#3b82f6;font-weight:700;"> (You)</span>
+                        {% endif %}
+                        {% if row.medal %}
+                        <span class="lb-medal-badge {{ row.medal }}"><i class="fas fa-medal"></i> {{ row.medal|capitalize }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="lb-user-sub">
+                        <i class="fas fa-clock me-1"></i>{{ row.completion_seconds or 0 }}s
+                        &nbsp;·&nbsp;
+                        <i class="fas fa-star me-1"></i>{{ row.score }} pts
+                    </div>
+                </div>
+                <div class="lb-pct">{{ row.percentage }}%</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="lb-empty">
+            <i class="fas fa-hourglass-half"></i>
+            No completed attempts yet. Be the first!
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Back link -->
+    <div class="mt-3">
+        <a href="{{ url_for('competitions.detail', competition_id=competition.id) }}" class="btn btn-ghost btn-sm">
+            <i class="fas fa-arrow-left me-1"></i> Back to Competition
+        </a>
+    </div>
+</div>
+
+<script>
+function filterLb() {
+    const q = document.getElementById('lbSearch').value.toLowerCase();
+    document.querySelectorAll('#lbList .lb-row').forEach(row => {
+        row.style.display = row.dataset.name.includes(q) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,8 @@
+# Al-Khwarizmi Smart Library Platform
+# Founder: Jaloliddin Omonbayev Ravshanbek o‘g‘li
+# GitHub: https://github.com/jaloliddinomonbaev
+# Telegram: https://t.me/jaloliddin_omonbaev
+
+User-agent: *
+Allow: /
+Sitemap: /sitemap.xml

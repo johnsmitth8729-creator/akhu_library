@@ -1,0 +1,133 @@
+{% extends "layouts/base.html" %}
+{% block title %}Import Questions — AKHU Library{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/competition.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="import-page">
+
+    <!-- Hero -->
+    <div class="import-hero">
+        <a href="{{ url_for('questions.index') }}" class="btn btn-ghost btn-sm mb-3" style="color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.25);">
+            <i class="fas fa-arrow-left me-1"></i> Back to Question Bank
+        </a>
+        <h1><i class="fas fa-file-import me-2"></i>Import Questions</h1>
+        <p>Upload an Excel (.xlsx) file to bulk-import questions into the question bank.</p>
+    </div>
+
+    <!-- Format guide -->
+    <div class="import-guide-card">
+        <div class="import-guide-header">
+            <i class="fas fa-table" style="color:#3b82f6;"></i>
+            Required Excel Column Format
+        </div>
+        <div class="import-guide-body">
+            <p class="text-sm text-slate-500 mb-3">Your file must have the following columns in row 1. Column names are case-insensitive.</p>
+            <div class="mb-3">
+                <span class="small fw-bold text-slate-600 d-block mb-1">Required columns:</span>
+                <span class="column-tag required"><i class="fas fa-asterisk" style="font-size:.6rem;"></i> question_text</span>
+                <span class="column-tag required"><i class="fas fa-asterisk" style="font-size:.6rem;"></i> question_type</span>
+                <span class="column-tag required"><i class="fas fa-asterisk" style="font-size:.6rem;"></i> option_1</span>
+                <span class="column-tag required"><i class="fas fa-asterisk" style="font-size:.6rem;"></i> option_2</span>
+                <span class="column-tag required"><i class="fas fa-asterisk" style="font-size:.6rem;"></i> correct_options</span>
+            </div>
+            <div class="mb-3">
+                <span class="small fw-bold text-slate-600 d-block mb-1">Optional columns:</span>
+                <span class="column-tag">option_3</span>
+                <span class="column-tag">option_4</span>
+                <span class="column-tag">option_5</span>
+                <span class="column-tag">difficulty</span>
+                <span class="column-tag">points</span>
+                <span class="column-tag">explanation</span>
+                <span class="column-tag">category</span>
+            </div>
+
+            <div class="row g-3 mt-1">
+                <div class="col-md-6">
+                    <div class="p-3 rounded-3 border border-slate-100 bg-slate-50">
+                        <p class="small fw-bold text-slate-700 mb-1"><i class="fas fa-info-circle text-primary me-1"></i> question_type values:</p>
+                        <div class="d-flex flex-wrap gap-1">
+                            <code class="small bg-white border rounded px-1">single</code>
+                            <code class="small bg-white border rounded px-1">multiple</code>
+                            <code class="small bg-white border rounded px-1">true_false</code>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 rounded-3 border border-slate-100 bg-slate-50">
+                        <p class="small fw-bold text-slate-700 mb-1"><i class="fas fa-info-circle text-primary me-1"></i> correct_options format:</p>
+                        <p class="small text-slate-500 mb-0">Single: <code>1</code> &nbsp; Multiple: <code>1,3</code> &nbsp; T/F: <code>True</code> or <code>False</code></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload form -->
+    <div class="import-guide-card">
+        <div class="import-guide-header">
+            <i class="fas fa-cloud-arrow-up" style="color:#3b82f6;"></i>
+            Upload Excel File
+        </div>
+        <div class="import-guide-body">
+            <form method="post" enctype="multipart/form-data" id="importForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="upload-zone" id="uploadZone">
+                    <input type="file" name="file" id="fileInput" accept=".xlsx,.xls" required>
+                    <div class="upload-icon">
+                        <i class="fas fa-file-excel"></i>
+                    </div>
+                    <h3>Drop your Excel file here</h3>
+                    <p>or click to browse &nbsp;·&nbsp; .xlsx, .xls supported</p>
+                </div>
+
+                <div class="upload-file-chosen" id="fileChosen">
+                    <i class="fas fa-circle-check"></i>
+                    <span id="fileChosenName">No file selected</span>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <a href="{{ url_for('questions.download_template') }}" class="btn btn-ghost btn-sm">
+                        <i class="fas fa-file-download me-1"></i> Download Template
+                    </a>
+                    <button type="submit" class="btn btn-primary px-4" id="importBtn" disabled>
+                        <i class="fas fa-eye me-1"></i> Preview Import
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<script>
+const zone     = document.getElementById('uploadZone');
+const input    = document.getElementById('fileInput');
+const chosen   = document.getElementById('fileChosen');
+const chosenNm = document.getElementById('fileChosenName');
+const btn      = document.getElementById('importBtn');
+
+input.addEventListener('change', () => {
+    if (input.files.length) {
+        chosenNm.textContent = input.files[0].name;
+        chosen.classList.add('show');
+        btn.disabled = false;
+    }
+});
+
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    if (e.dataTransfer.files.length) {
+        input.files = e.dataTransfer.files;
+        chosenNm.textContent = e.dataTransfer.files[0].name;
+        chosen.classList.add('show');
+        btn.disabled = false;
+    }
+});
+</script>
+{% endblock %}

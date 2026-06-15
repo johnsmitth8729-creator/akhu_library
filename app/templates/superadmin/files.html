@@ -1,0 +1,94 @@
+{% extends "superadmin/layout.html" %}
+{% block title %}File Manager{% endblock %}
+{% block breadcrumb %}File Manager{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+    <div class="sa-page-title"><i class="fas fa-folder-open"></i> File Manager</div>
+    <div class="sa-page-subtitle">Browse, download, and delete uploaded files. No file execution allowed.</div>
+</div>
+
+<!-- Tab Navigation -->
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+    {% for tab_key, tab_label, tab_icon in tabs %}
+    <a href="{{ url_for('superadmin.files', tab=tab_key) }}"
+       class="sa-btn {% if active_tab == tab_key %}sa-btn-primary{% else %}sa-btn-ghost{% endif %}">
+        <i class="fas {{ tab_icon }}"></i> {{ tab_label }}
+    </a>
+    {% endfor %}
+</div>
+
+<!-- Search -->
+<div class="sa-card" style="margin-bottom:16px;padding:14px 16px;">
+    <form method="get" action="{{ url_for('superadmin.files') }}">
+        <input type="hidden" name="tab" value="{{ active_tab }}">
+        <div style="display:flex;gap:10px;align-items:center;">
+            <input name="search" value="{{ search }}" class="sa-form-input" placeholder="Search files…" style="flex:1;">
+            <button type="submit" class="sa-btn sa-btn-primary">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- File Grid -->
+<div class="sa-card">
+    <div class="sa-card-title">
+        <i class="fas fa-folder"></i>
+        {{ file_list|length }} files in "{{ active_tab }}"
+    </div>
+
+    {% if file_list %}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;">
+        {% for f in file_list %}
+        <div style="background:var(--sa-bg);border:1px solid var(--sa-border);border-radius:10px;padding:14px;transition:border-color .2s;"
+             onmouseover="this.style.borderColor='rgba(108,92,231,.5)'"
+             onmouseout="this.style.borderColor='var(--sa-border)'">
+            <!-- File Icon -->
+            <div style="text-align:center;margin-bottom:10px;font-size:32px;opacity:.7;">
+                {% if f.ext in ['jpg','jpeg','png','webp','gif'] %}
+                🖼️
+                {% elif f.ext == 'pdf' %}
+                📄
+                {% elif f.ext == 'zip' %}
+                🗜️
+                {% elif f.ext == 'log' %}
+                📋
+                {% elif f.ext in ['sql','db'] %}
+                🗄️
+                {% else %}
+                📁
+                {% endif %}
+            </div>
+            <div style="font-size:12px;font-weight:600;word-break:break-all;margin-bottom:4px;text-align:center;">
+                {{ f.name[:35] }}{% if f.name|length > 35 %}…{% endif %}
+            </div>
+            <div style="font-size:11px;color:var(--sa-muted);text-align:center;margin-bottom:12px;">
+                {{ f.size }} · {{ f.modified }}
+            </div>
+            <div style="display:flex;gap:6px;justify-content:center;">
+                <a href="{{ url_for('superadmin.files_download', tab=active_tab, name=f.name) }}"
+                   class="sa-btn sa-btn-ghost sa-btn-sm">
+                    <i class="fas fa-download"></i>
+                </a>
+                <form action="{{ url_for('superadmin.files_delete') }}" method="post"
+                      onsubmit="return confirm('Delete {{ f.name }}?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="tab" value="{{ active_tab }}">
+                    <input type="hidden" name="name" value="{{ f.name }}">
+                    <button type="submit" class="sa-btn sa-btn-danger sa-btn-sm">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:48px;color:var(--sa-muted);">
+        <i class="fas fa-folder-open" style="font-size:48px;opacity:.3;display:block;margin-bottom:12px;"></i>
+        No files found{% if search %} matching "{{ search }}"{% endif %}.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,277 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Borrowed Books | Librarian Panel{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/librarian.css') }}?v=3">
+<style>
+    .timeline-date-block {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        background: #f8fafc;
+        border: 1px solid var(--gray-200);
+        border-radius: 10px;
+        padding: 0.65rem 0.85rem;
+        font-size: 0.82rem;
+        max-width: 220px;
+    }
+    
+    .timeline-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="librarian-area">
+    <div class="container">
+        
+        <!-- HEADER -->
+        <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h1>Borrowing Records</h1>
+                <p class="text-muted">Track, monitor, and manage active, overdue, and returned physical library assets.</p>
+            </div>
+            <a href="{{ url_for('librarian.dashboard') }}" class="btn btn-ghost" style="border-radius: 12px; font-weight: 700;">
+                <i class="fas fa-chevron-left me-2"></i> Dashboard
+            </a>
+        </div>
+
+        <!-- FILTERS & SEARCH -->
+        <div class="filters-card">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="tab-group mb-0" style="margin-bottom: 0;">
+                    <a class="tab-btn {% if not status %}active{% endif %}" href="{{ url_for('librarian.manage_borrowings', q=q) }}">
+                        <i class="fas fa-list-ul"></i> All Records
+                    </a>
+                    <a class="tab-btn {% if status == 'Borrowed' %}active{% endif %}" href="{{ url_for('librarian.manage_borrowings', status='Borrowed', q=q) }}">
+                        <i class="fas fa-book-reader"></i> Borrowed
+                    </a>
+                    <a class="tab-btn {% if status == 'Early' %}active{% endif %}" href="{{ url_for('librarian.manage_borrowings', status='Early', q=q) }}">
+                        <i class="fas fa-forward-fast"></i> Early Return Ready
+                    </a>
+                    <a class="tab-btn {% if status == 'Overdue' %}active{% endif %}" href="{{ url_for('librarian.manage_borrowings', status='Overdue', q=q) }}">
+                        <i class="fas fa-exclamation-circle"></i> Overdue
+                    </a>
+                    <a class="tab-btn {% if status == 'Returned' %}active{% endif %}" href="{{ url_for('librarian.manage_borrowings', status='Returned', q=q) }}">
+                        <i class="fas fa-check-double"></i> Returned
+                    </a>
+                </div>
+
+                <form method="GET" class="search-group mb-0" style="flex-grow: 1; max-width: 400px;">
+                    {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-search"></i>
+                        <input type="text" name="q" value="{{ q or '' }}" placeholder="Search title, user, email..." class="form-input-full" style="border-radius: 12px; height: 42px; min-height: 42px;">
+                    </div>
+                    <button type="submit" class="btn btn-primary fw-bold" style="border-radius: 12px; height: 42px;">
+                        Search
+                    </button>
+                    {% if q %}
+                    <a href="{{ url_for('librarian.manage_borrowings', status=status) }}" class="btn btn-ghost text-danger d-flex align-items-center justify-content-center" style="border-radius: 12px; width: 42px; height: 42px; padding: 0;" title="Clear search">
+                        <i class="fas fa-times" style="font-size: 1.1rem;"></i>
+                    </a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+
+        <!-- DATA TABLE -->
+        <div class="data-card">
+            {% if pagination.items %}
+            <div class="table-responsive">
+                <table class="data-table data-table-card-mobile">
+                    <thead>
+                        <tr>
+                            <th style="min-width: 200px;">Member</th>
+                            <th style="min-width: 240px;">Book Title</th>
+                            <th style="width: 250px; min-width: 250px;">Dates & Timeline</th>
+                            <th class="text-center" style="width: 140px; min-width: 140px;">Fine</th>
+                            <th class="text-center" style="width: 140px; min-width: 140px;">Status</th>
+                            <th class="text-end" style="width: 220px; min-width: 220px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for borrow in pagination.items %}
+                        <tr>
+                            <td data-label="Member">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="avatar-circle">
+                                        {{ (borrow.user.fullname or borrow.user.username or '?')[0].upper() if borrow.user else '?' }}
+                                    </div>
+                                    <div class="user-info">
+                                        <span class="info-main">
+                                            {% if borrow.user %}
+                                                {{ borrow.user.fullname or borrow.user.username }}
+                                            {% else %}
+                                                <span class="text-danger">Unknown User</span>
+                                            {% endif %}
+                                        </span>
+                                        <span class="info-sub">{{ borrow.user.email if borrow.user else '---' }}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td data-label="Book Title">
+                                <div class="d-flex align-items-center gap-3">
+                                    {% if borrow.book and borrow.book.cover_image %}
+                                    <img src="{{ url_for('static', filename=borrow.book.cover_image) }}" class="table-book-cover" alt="cover" style="width: 36px; height: 48px; border-radius: 6px;">
+                                    {% else %}
+                                    <div class="table-cover-placeholder" style="width: 36px; height: 48px; border-radius: 6px; font-size: 0.55rem; padding: 2px;">
+                                        <i class="fas fa-book" style="font-size: 0.65rem;"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div class="book-info">
+                                        <span class="info-main">{{ borrow.book.title if borrow.book else 'Deleted Book' }}</span>
+                                        <span class="info-sub">
+                                            {{ borrow.book.author.fullname if borrow.book and borrow.book.author else 'Unknown' }}
+                                            {% if borrow.book and borrow.book.isbn %} | ISBN: {{ borrow.book.isbn }}{% endif %}
+                                        </span>
+                                        {% if borrow.copy %}
+                                        <span class="info-sub text-primary fw-bold mt-1 d-block">
+                                            <i class="fas fa-barcode me-1"></i> Copy NN: {{ borrow.copy.nn_number }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td data-label="Dates & Timeline">
+                                <div class="timeline-date-block">
+                                    <div class="timeline-item">
+                                        <span class="text-muted fw-bold"><i class="fas fa-calendar-alt me-1 text-primary"></i> From:</span> 
+                                        <strong>{{ borrow.borrowed_at.strftime('%d %b %Y') }}</strong>
+                                    </div>
+                                    <div class="timeline-item">
+                                        <span class="text-muted fw-bold"><i class="fas fa-calendar-times me-1 text-danger"></i> Deadline:</span> 
+                                        <strong class="{{ 'text-danger fw-bold' if borrow.status != 'Returned' and borrow.is_overdue else 'text-dark' }}">
+                                            {{ borrow.return_date.strftime('%d %b %Y') }}
+                                        </strong>
+                                    </div>
+                                    {% if borrow.returned_at %}
+                                    <div class="timeline-item text-success">
+                                        <span class="text-muted fw-bold"><i class="fas fa-calendar-check me-1 text-success"></i> Returned:</span> 
+                                        <strong>{{ borrow.returned_at.strftime('%d %b %Y') }}</strong>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td data-label="Fine" class="text-center">
+                                {% set late_fine = borrow.fine_amount(late_fine_per_day) %}
+                                {% if borrow.status in ["Borrowed", "Overdue"] and late_fine > 0 %}
+                                    <div class="fw-bold text-danger">{{ "{:,}".format(late_fine) }} UZS</div>
+                                    <span class="info-sub">{{ borrow.overdue_days() }} late days</span>
+                                {% elif borrow.status == "Returned" and borrow.returned_at and borrow.fine_amount(late_fine_per_day, reference_time=borrow.returned_at) > 0 %}
+                                    <div class="fw-bold text-danger">{{ "{:,}".format(borrow.final_fine_amount or borrow.fine_amount(late_fine_per_day, reference_time=borrow.returned_at)) }} UZS</div>
+                                    <span class="info-sub">{{ borrow.fine_status|capitalize }}</span>
+                                {% else %}
+                                    <span class="badge-custom returned">No Fine</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Status" class="text-center">
+                                {% if borrow.status == "Returned" %}
+                                    <span class="badge-custom returned">
+                                        <i class="fas fa-check-circle"></i> Returned
+                                    </span>
+                                    {% if borrow.return_condition == "damaged" %}
+                                        <div class="small text-danger" style="margin-top: 6px;">Damaged</div>
+                                    {% elif borrow.return_condition == "lost" %}
+                                        <div class="small text-danger" style="margin-top: 6px;">Lost</div>
+                                    {% endif %}
+                                {% elif borrow.status == "Overdue" or borrow.is_overdue %}
+                                    <span class="badge-custom overdue">
+                                        <i class="fas fa-exclamation-triangle"></i> Overdue
+                                    </span>
+                                {% else %}
+                                    <span class="badge-custom pending" style="background: rgba(11, 59, 111, 0.05); color: var(--royal); border-color: rgba(11, 59, 111, 0.15);">
+                                        <i class="fas fa-book-reader"></i> Borrowed
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Actions" class="text-end">
+                                {% if borrow.status in ["Borrowed", "Overdue"] %}
+                                <form method="POST" action="{{ url_for('librarian.borrowing_return', borrow_id=borrow.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="status" value="{{ status }}">
+                                    <select name="return_condition" class="table-input" style="margin-bottom: 8px;">
+                                        <option value="good">Good</option>
+                                        <option value="damaged">Damaged</option>
+                                        <option value="lost">Lost</option>
+                                    </select>
+                                    <input type="number" name="additional_charge" class="table-input" value="0" min="0" placeholder="Extra charge" style="margin-bottom: 8px;">
+                                    <input type="text" name="condition_notes" class="table-input" placeholder="Condition note" style="margin-bottom: 8px;">
+                                    <button type="submit" class="btn btn-primary btn-sm px-3 fw-bold" style="border-radius: 8px;"
+                                            onclick="return confirm('Confirm the book return now?')">
+                                        <i class="fas fa-undo-alt me-1"></i> Confirm Return
+                                    </button>
+                                </form>
+                                {% elif borrow.status == "Returned" and borrow.has_unpaid_fine %}
+                                <div class="d-flex justify-content-end gap-2" style="flex-wrap: wrap;">
+                                    <form method="POST" action="{{ url_for('librarian.update_borrowing_fine_status', borrow_id=borrow.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="status" value="{{ status }}">
+                                        <input type="hidden" name="fine_status" value="paid">
+                                        <button type="submit" class="btn btn-primary btn-sm px-3 fw-bold" style="border-radius: 8px;">
+                                            <i class="fas fa-wallet me-1"></i> Mark Paid
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="{{ url_for('librarian.update_borrowing_fine_status', borrow_id=borrow.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="status" value="{{ status }}">
+                                        <input type="hidden" name="fine_status" value="waived">
+                                        <button type="submit" class="btn btn-ghost btn-sm px-3 fw-bold" style="border-radius: 8px;">
+                                            <i class="fas fa-hand-holding-heart me-1"></i> Waive
+                                        </button>
+                                    </form>
+                                </div>
+                                {% else %}
+                                <span class="text-muted small fw-bold d-inline-flex align-items-center gap-1">
+                                    <i class="fas fa-lock"></i> Closed
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state-container">
+                <div class="empty-state-icon" style="background: rgba(11, 59, 111, 0.05); color: var(--royal);">
+                    <i class="fas fa-folder-open"></i>
+                </div>
+                <h3>No borrowing records</h3>
+                <p>No physical book borrowing history matches the selected tab filter.</p>
+                {% if status %}
+                <a href="{{ url_for('librarian.manage_borrowings') }}" class="btn btn-link btn-sm">Clear Filters</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- PAGINATION -->
+        {% if pagination.pages > 1 %}
+        <div class="pagination-wrapper">
+            {% if pagination.has_prev %}
+                <a href="{{ url_for('librarian.manage_borrowings', page=pagination.prev_num, status=status, q=q) }}" class="page-btn">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            {% endif %}
+            
+            <div class="page-info">
+                Page <strong>{{ pagination.page }}</strong> of {{ pagination.pages }}
+            </div>
+
+            {% if pagination.has_next %}
+                <a href="{{ url_for('librarian.manage_borrowings', page=pagination.next_num, status=status, q=q) }}" class="page-btn">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

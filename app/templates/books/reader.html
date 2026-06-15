@@ -1,0 +1,363 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+Reading — {{ book.title }} | Al-Khwarizmi Smart Library
+{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/book.css') }}">
+{% endblock %}
+
+{% block content %}
+
+{# ── Top Header Bar ── #}
+<div class="reader-topbar" id="readerTopbar">
+    <div class="reader-topbar-left">
+        <button id="sidebar-toggle-btn" class="reader-btn" type="button" aria-label="Toggle navigation sidebar">
+            <i class="fas fa-bars"></i>
+            <span class="reader-btn-label">Contents</span>
+        </button>
+    </div>
+
+    <div class="reader-book-info">
+        <span class="reader-badge">Digital Library</span>
+        <h1>{{ book.title }}</h1>
+        <p>{{ book.author.fullname if book.author else 'Unknown Author' }}</p>
+        {% if read_protected %}
+        <span class="reader-protection-badge">
+            <i class="fas fa-shield-halved"></i> Online Only
+        </span>
+        {% endif %}
+    </div>
+
+    <div class="reader-actions">
+        <!-- Elegant settings switcher dropdown -->
+        <div class="reader-dropdown-container">
+            <button id="theme-menu-btn" class="reader-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Reading settings">
+                <i class="fas fa-cog"></i>
+                <span class="reader-btn-label">Settings</span>
+            </button>
+            <div class="reader-dropdown-menu" id="themeDropdownMenu">
+                <div class="dropdown-section">
+                    <span class="dropdown-section-title">Theme</span>
+                    <div class="theme-picker-grid">
+                        <button class="theme-opt-btn active" data-theme="light" title="Light Theme">
+                            <span class="theme-preview-dot light"></span> Light
+                        </button>
+                        <button class="theme-opt-btn" data-theme="sepia" title="Sepia Theme">
+                            <span class="theme-preview-dot sepia"></span> Sepia
+                        </button>
+                        <button class="theme-opt-btn" data-theme="night" title="Night Theme">
+                            <span class="theme-preview-dot night"></span> Night
+                        </button>
+                        <button class="theme-opt-btn" data-theme="midnight" title="Midnight Theme">
+                            <span class="theme-preview-dot midnight"></span> OLED
+                        </button>
+                    </div>
+                </div>
+                <div class="dropdown-section">
+                    <span class="dropdown-section-title">Rotation</span>
+                    <div class="rotate-buttons-row">
+                        <button id="rotate-left-top" class="dropdown-btn" type="button" title="Rotate Left">
+                            <i class="fas fa-undo"></i> CCW
+                        </button>
+                        <button id="rotate-right-top" class="dropdown-btn" type="button" title="Rotate Right">
+                            <i class="fas fa-redo"></i> CW
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button id="fullscreen-btn" class="reader-btn" type="button" aria-label="Toggle fullscreen">
+            <i class="fas fa-expand"></i>
+            <span class="reader-btn-label">Fullscreen</span>
+        </button>
+
+        <a href="{{ url_for('books.detail', book_id=book.id) }}" class="reader-btn back-btn" aria-label="Back to book detail">
+            <i class="fas fa-arrow-left"></i>
+            <span class="reader-btn-label">Back</span>
+        </a>
+    </div>
+</div>
+
+{# ── Unified Controls Toolbar (Desktop/Tablet) ── #}
+<div class="pdf-toolbar" id="pdfToolbar">
+    <div class="toolbar-left">
+        <button id="prev-page" class="toolbar-btn" aria-label="Previous page">
+            <i class="fas fa-chevron-left"></i>
+            <span class="toolbar-label">Prev</span>
+        </button>
+
+        <button id="next-page" class="toolbar-btn" aria-label="Next page">
+            <span class="toolbar-label">Next</span>
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>
+
+    <!-- Scrubber and jumps in center -->
+    <div class="toolbar-center">
+        <div class="page-scrub-container">
+            <input type="range" id="page-scrubber" min="1" max="1" value="1" class="page-scrubber" aria-label="Page scrubber">
+            <div class="page-indicators-wrap">
+                <span class="page-indicator">
+                    Page <input type="number" id="page-input" class="page-input-box" min="1" value="1" aria-label="Jump to page"> / <span id="page-count">—</span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="toolbar-right">
+        <button id="zoom-out" class="toolbar-btn" aria-label="Zoom out">
+            <i class="fas fa-search-minus"></i>
+        </button>
+        <button id="zoom-in" class="toolbar-btn" aria-label="Zoom in">
+            <i class="fas fa-search-plus"></i>
+        </button>
+        <button id="fit-width-btn" class="toolbar-btn" aria-label="Fit to width">
+            <i class="fas fa-arrows-alt-h"></i>
+        </button>
+        <button id="bookmark-page" class="toolbar-btn" aria-label="Bookmark this page">
+            <i class="fas fa-bookmark"></i>
+        </button>
+    </div>
+</div>
+
+{# ── Reading Progress Bar ── #}
+<div class="reading-progress-wrapper" id="readingProgressWrapper">
+    <div class="reading-progress-bar" id="readingProgressBar"></div>
+</div>
+
+{# ── Workspace Split Layout ── #}
+<div class="reader-workspace" id="readerWorkspace">
+    <!-- Left Sidebar: collapsible -->
+    <aside class="reader-sidebar collapsed" id="readerSidebar">
+        <div class="sidebar-header">
+            <h3>Navigation</h3>
+            <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close sidebar">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="sidebar-tabs">
+            <button class="tab-btn active" id="tab-btn-toc" data-tab="toc">
+                <i class="fas fa-list-ul"></i> Outline
+            </button>
+            <button class="tab-btn" id="tab-btn-bookmarks" data-tab="bookmarks">
+                <i class="fas fa-bookmark"></i> Bookmarks
+            </button>
+        </div>
+        
+        <div class="sidebar-tab-content active" id="tab-content-toc">
+            <div id="toc-list" class="toc-list-container">
+                <!-- Outlines will be dynamically loaded here -->
+                <div class="toc-placeholder">
+                    <i class="fas fa-folder-open"></i>
+                    <p>No table of contents available.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="sidebar-tab-content" id="tab-content-bookmarks">
+            <div id="bookmarks-list" class="bookmarks-list-container">
+                <!-- Bookmarks will be loaded here -->
+                <div class="bookmarks-placeholder">
+                    <i class="fas fa-bookmark"></i>
+                    <p>No saved bookmarks.</p>
+                    <span class="small-text">Click the bookmark button to save pages here.</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main PDF Viewer Panel -->
+    <main class="reader-main-panel">
+        <div class="pdf-viewer-container" id="pdf-container" oncontextmenu="return false;">
+            <div id="pdf-loader" class="pdf-loader">
+                <div class="loader-spinner"></div>
+                <p>Loading digital collection resource…</p>
+            </div>
+
+            <canvas
+                id="pdf-render"
+                data-url="{{ pdf_url }}"
+                data-progress-url="{{ url_for('books.digital_book_progress', book_id=book.id) }}"
+                data-bookmark-url="{{ url_for('books.bookmark_digital_book', book_id=book.id) }}"
+                data-initial-page="{{ progress.current_page if progress else 1 }}"
+                data-csrf="{{ csrf_token() }}"
+                data-protected="{{ 'true' if read_protected else 'false' }}"
+            ></canvas>
+
+            {% if read_protected %}
+            <div class="pdf-protection-overlay" aria-hidden="true"></div>
+            {% endif %}
+        </div>
+    </main>
+</div>
+
+{# ── Footer Info (Desktop only) ── #}
+<div class="reader-footer-info" id="readerFooterInfo">
+    <div class="info-card">
+        <strong>{% if read_protected %}Protected Reading Mode{% else %}Secure Resource{% endif %}</strong>
+        <span>
+            {% if read_protected %}
+            Downloads and direct PDF URL links are restricted for copyright protection.
+            {% else %}
+            Online reading is open for students and faculty.
+            {% endif %}
+        </span>
+    </div>
+
+    <div class="info-card">
+        <strong>Cloud Synchronized</strong>
+        <span>Your current page is saved automatically and synced across all devices.</span>
+    </div>
+</div>
+
+{# ── Mobile Floating Toolbar ── #}
+<div class="reader-mobile-toolbar" id="readerMobileToolbar" role="toolbar" aria-label="Reader controls">
+    <a href="{{ url_for('books.detail', book_id=book.id) }}" class="mobile-tb-btn mobile-tb-back" id="mobileBackBtn" aria-label="Back">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+
+    <button id="mobile-prev" class="mobile-tb-btn" aria-label="Previous page">
+        <i class="fas fa-chevron-left"></i>
+    </button>
+
+    <div class="mobile-tb-page" id="mobile-page-indicator-btn" role="button" tabindex="0" title="Change page">
+        <span id="mobile-page-num">1</span><span class="mobile-tb-sep">/</span><span id="mobile-page-count">—</span>
+    </div>
+
+    <button id="mobile-next" class="mobile-tb-btn" aria-label="Next page">
+        <i class="fas fa-chevron-right"></i>
+    </button>
+
+    <button id="mobile-fullscreen" class="mobile-tb-btn" aria-label="Fullscreen">
+        <i class="fas fa-expand"></i>
+    </button>
+
+    <button id="mobile-menu-btn" class="mobile-tb-btn" aria-label="Settings and navigation" aria-haspopup="dialog">
+        <i class="fas fa-cog"></i>
+    </button>
+</div>
+
+{# ── Mobile Bottom Sheet Drawer ── #}
+<div class="mobile-bottom-sheet" id="mobileBottomSheet">
+    <div class="sheet-backdrop" id="sheetBackdrop"></div>
+    <div class="sheet-content">
+        <div class="sheet-drag-handle"></div>
+        <div class="sheet-header">
+            <h4>Reader Controls</h4>
+            <button class="sheet-close-btn" id="sheetCloseBtn" aria-label="Close settings"><i class="fas fa-times"></i></button>
+        </div>
+        
+        <div class="sheet-tabs">
+            <button class="sheet-tab-btn active" data-sheet-tab="display">Display</button>
+            <button class="sheet-tab-btn" data-sheet-tab="outline">Outline</button>
+            <button class="sheet-tab-btn" data-sheet-tab="bookmarks">Bookmarks</button>
+        </div>
+
+        <div class="sheet-tab-body active" id="sheet-tab-display">
+            <!-- Theme picker -->
+            <div class="sheet-section">
+                <span class="sheet-section-title">Color Theme</span>
+                <div class="theme-picker-grid">
+                    <button class="theme-opt-btn active" data-theme="light">
+                        <span class="theme-preview-dot light"></span> Light
+                    </button>
+                    <button class="theme-opt-btn" data-theme="sepia">
+                        <span class="theme-preview-dot sepia"></span> Sepia
+                    </button>
+                    <button class="theme-opt-btn" data-theme="night">
+                        <span class="theme-preview-dot night"></span> Night
+                    </button>
+                    <button class="theme-opt-btn" data-theme="midnight">
+                        <span class="theme-preview-dot midnight"></span> OLED
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Zoom & Rotate controls -->
+            <div class="sheet-section">
+                <span class="sheet-section-title">Zoom / Fit</span>
+                <div class="sheet-control-row">
+                    <button id="mobile-zoom-out" class="sheet-btn" type="button"><i class="fas fa-search-minus"></i> Out</button>
+                    <button id="mobile-zoom-in" class="sheet-btn" type="button"><i class="fas fa-search-plus"></i> In</button>
+                    <button id="mobile-fit-width" class="sheet-btn" type="button"><i class="fas fa-arrows-alt-h"></i> Width</button>
+                </div>
+            </div>
+
+            <div class="sheet-section">
+                <span class="sheet-section-title">Rotation</span>
+                <div class="sheet-control-row">
+                    <button id="mobile-rotate-left" class="sheet-btn" type="button"><i class="fas fa-undo"></i> Left</button>
+                    <button id="mobile-rotate-right" class="sheet-btn" type="button"><i class="fas fa-redo"></i> Right</button>
+                </div>
+            </div>
+
+            <!-- Page Scrubber slider -->
+            <div class="sheet-section">
+                <span class="sheet-section-title">Page Navigation Scrubber</span>
+                <div class="sheet-scrub-row">
+                    <input type="range" id="mobile-scrubber" min="1" max="1" value="1" class="page-scrubber">
+                </div>
+            </div>
+            
+            <!-- Fullscreen action -->
+            <div class="sheet-section" style="margin-top: 12px; margin-bottom: 8px;">
+                <button id="sheet-fullscreen-btn" class="sheet-action-btn" type="button" style="background: var(--theme-border); border-color: var(--theme-border); color: var(--theme-text);">
+                    <i class="fas fa-expand"></i> Fullscreen
+                </button>
+            </div>
+
+            <!-- Bookmark page action -->
+            <div class="sheet-section">
+                <button id="mobile-bookmark-btn" class="sheet-action-btn" type="button">
+                    <i class="fas fa-bookmark"></i> Bookmark Current Page
+                </button>
+            </div>
+        </div>
+
+        <div class="sheet-tab-body" id="sheet-tab-outline">
+            <div id="mobile-toc-list" class="toc-list-container">
+                <div class="toc-placeholder">
+                    <i class="fas fa-folder-open"></i>
+                    <p>No table of contents available.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="sheet-tab-body" id="sheet-tab-bookmarks">
+            <div id="mobile-bookmarks-list" class="bookmarks-list-container">
+                <div class="bookmarks-placeholder">
+                    <i class="fas fa-bookmark"></i>
+                    <p>No bookmarks saved yet.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── Theme-Toggle-Dark Fallback / Compatibility (for js references) ── #}
+<button id="toggle-dark" style="display:none !important;" aria-hidden="true"></button>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+<script src="{{ url_for('static', filename='js/pdf_reader.js') }}"></script>
+<script>
+    // Mark body so CSS container overrides apply on reader page
+    document.body.classList.add('reader-page-active');
+
+    // Mobile back button: prefer history.back() when possible
+    (function () {
+        var mobileBack = document.getElementById('mobileBackBtn');
+        if (mobileBack && window.history && window.history.length > 1) {
+            mobileBack.addEventListener('click', function (e) {
+                e.preventDefault();
+                window.history.back();
+            });
+        }
+    })();
+</script>
+{% endblock %}

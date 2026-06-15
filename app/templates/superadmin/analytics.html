@@ -1,0 +1,207 @@
+{% extends "superadmin/layout.html" %}
+{% block title %}Analytics{% endblock %}
+{% block breadcrumb %}Analytics{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+    <div class="sa-page-title"><i class="fas fa-chart-line"></i> Analytics & Insights</div>
+    <div class="sa-page-subtitle">Track library engagement, user borrowing patterns, and digital reading activity.</div>
+</div>
+
+<!-- Charts Grid -->
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 18px; margin-bottom: 24px;">
+    <!-- Borrowing Trend -->
+    <div class="sa-card">
+        <div class="sa-card-title"><i class="fas fa-hand-holding-heart"></i> Borrowing Activity — Last 30 Days</div>
+        <canvas id="borrowTrendChart" height="110"></canvas>
+    </div>
+
+    <!-- Faculty Breakdown -->
+    <div class="sa-card">
+        <div class="sa-card-title"><i class="fas fa-graduation-cap"></i> Users by Faculty</div>
+        <canvas id="facultyChart" height="110"></canvas>
+    </div>
+</div>
+
+<!-- Data Tables Grid -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 24px;">
+    <!-- Top Physical Books -->
+    <div class="sa-card">
+        <div class="sa-card-title"><i class="fas fa-book"></i> Top Borrowed Physical Books</div>
+        <div class="sa-table-wrapper">
+            <table class="sa-table">
+                <thead>
+                    <tr>
+                        <th>Book Title</th>
+                        <th>ISBN</th>
+                        <th>Times Borrowed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for book, cnt in top_books %}
+                    <tr>
+                        <td><strong>{{ book.title }}</strong><br><small style="color:var(--sa-muted)">by {{ book.author.name if book.author else 'Unknown' }}</small></td>
+                        <td>{{ book.isbn }}</td>
+                        <td><span class="sa-badge sa-badge-success">{{ cnt }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" style="text-align: center; color: var(--sa-muted);">No borrowings recorded yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Top Digital Books -->
+    <div class="sa-card">
+        <div class="sa-card-title"><i class="fas fa-tablet-alt"></i> Top Read Digital Books</div>
+        <div class="sa-table-wrapper">
+            <table class="sa-table">
+                <thead>
+                    <tr>
+                        <th>Book Title</th>
+                        <th>Format / Size</th>
+                        <th>Times Read</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for book, cnt in top_digital %}
+                    <tr>
+                        <td><strong>{{ book.title }}</strong><br><small style="color:var(--sa-muted)">by {{ book.author.name if book.author else 'Unknown' }}</small></td>
+                        <td>{{ book.file_format|upper if book.file_format else 'PDF' }}</td>
+                        <td><span class="sa-badge sa-badge-info">{{ cnt }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" style="text-align: center; color: var(--sa-muted);">No digital reads recorded yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr; gap: 18px;">
+    <!-- Active Users -->
+    <div class="sa-card">
+        <div class="sa-card-title"><i class="fas fa-users-viewfinder"></i> Most Active Borrowers</div>
+        <div class="sa-table-wrapper">
+            <table class="sa-table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Faculty</th>
+                        <th>Role</th>
+                        <th>Borrowing Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user, cnt in active_users %}
+                    <tr>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <div class="sa-avatar" style="width:28px;height:28px;font-size:11px;">{{ user.fullname[0]|upper }}</div>
+                                <div><strong>{{ user.fullname }}</strong><br><small style="color:var(--sa-muted)">@{{ user.username }}</small></div>
+                            </div>
+                        </td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.faculty_display or '—' }}</td>
+                        <td>
+                            {% if user.role == 'superadmin' %}
+                            <span class="sa-badge sa-badge-danger">SuperAdmin</span>
+                            {% elif user.role == 'admin' %}
+                            <span class="sa-badge sa-badge-purple">Admin</span>
+                            {% elif user.role == 'librarian' %}
+                            <span class="sa-badge sa-badge-warning">Librarian</span>
+                            {% else %}
+                            <span class="sa-badge sa-badge-info">User</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="sa-badge sa-badge-success">{{ cnt }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--sa-muted);">No user activity recorded yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// Borrowing Trend
+const borrowData = {{ borrow_chart | safe }};
+const trendLabels = [];
+const trendValues = [];
+const today = new Date();
+for (let i = 29; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const key = d.toISOString().split('T')[0];
+    trendLabels.push(key.slice(5)); // MM-DD
+    trendValues.push(borrowData[key] || 0);
+}
+
+new Chart(document.getElementById('borrowTrendChart'), {
+    type: 'line',
+    data: {
+        labels: trendLabels,
+        datasets: [{
+            data: trendValues,
+            borderColor: '#00b894',
+            backgroundColor: 'rgba(0,184,148,.1)',
+            fill: true,
+            tension: .4,
+            pointRadius: 2,
+            borderWidth: 2,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#8892a4', font: { size: 10 } } },
+            y: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#8892a4', font: { size: 10 } }, beginAtZero: true }
+        }
+    }
+});
+
+// Faculty Distribution
+const facultyNames = [];
+const facultyCounts = [];
+{% for name, count in faculty_stats %}
+    facultyNames.push("{{ name or 'No Faculty' }}");
+    facultyCounts.push({{ count }});
+{% endfor %}
+
+new Chart(document.getElementById('facultyChart'), {
+    type: 'bar',
+    data: {
+        labels: facultyNames.slice(0, 10), // Show top 10
+        datasets: [{
+            data: facultyCounts.slice(0, 10),
+            backgroundColor: 'rgba(108,92,231,.75)',
+            hoverBackgroundColor: '#6c5ce7',
+            borderRadius: 6,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#8892a4', font: { size: 9 }, maxRotation: 45, minRotation: 45 } },
+            y: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#8892a4', font: { size: 10 } }, beginAtZero: true }
+        }
+    }
+});
+</script>
+{% endblock %}

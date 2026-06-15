@@ -1,0 +1,147 @@
+{% extends "layouts/base.html" %}
+{% block title %}Question Categories — AKHU Library{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/competition.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="competition-page cat-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 text-slate-800 font-bold mb-1">Question Categories</h1>
+            <p class="text-sm text-slate-500 m-0">Group questions in the bank for structured challenges</p>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="openAddModal()">
+            <i class="fas fa-plus mr-1"></i> Add Category
+        </button>
+    </div>
+
+    <!-- Categories Table -->
+    <div class="qbank-table-container">
+        <table class="table mb-0">
+            <thead class="bg-slate-50">
+                <tr>
+                    <th class="border-0 px-4 py-3" style="width: 250px;">Category Name</th>
+                    <th class="border-0 px-4 py-3">Description</th>
+                    <th class="border-0 px-4 py-3 text-center" style="width: 120px;">Questions</th>
+                    <th class="border-0 px-4 py-3 text-right" style="width: 150px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cat in categories %}
+                <tr class="align-middle border-bottom border-slate-100">
+                    <td class="px-4 py-3 font-semibold text-slate-700">{{ cat.name }}</td>
+                    <td class="px-4 py-3 text-sm text-slate-500">{{ cat.description or '—' }}</td>
+                    <td class="px-4 py-3 text-center text-sm font-bold text-slate-600">{{ cat.questions.count() }}</td>
+                    <td class="px-4 py-3 text-right">
+                        <div class="d-inline-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-ghost" 
+                                    onclick="openEditModal('{{ cat.id }}', '{{ cat.name|escape }}', '{{ (cat.description or '')|escape }}')">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                            <form action="{{ url_for('categories.delete', category_id=cat.id) }}" method="post" 
+                                  onsubmit="return confirm('Are you sure you want to delete this category? questions assigned to it will be unassigned.');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-ghost text-danger">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="text-center py-5 text-slate-400">
+                        <i class="fas fa-folder-open fa-2x mb-2 d-block"></i>
+                        No categories found. Create one to organize questions!
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Add Modal -->
+<div class="modal-overlay" id="addModal">
+    <div class="modal-card">
+        <h3 class="h4 text-slate-800 font-bold mb-3">Add Question Category</h3>
+        <form action="{{ url_for('categories.create') }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="form-group mb-3">
+                <label class="form-label font-semibold text-sm">Category Name</label>
+                {{ form.name(class="form-control", placeholder="e.g. History, Mathematics, Science") }}
+            </div>
+            <div class="form-group mb-4">
+                <label class="form-label font-semibold text-sm">Description (Optional)</label>
+                {{ form.description(class="form-control", rows=3, placeholder="Brief details about topics covered...") }}
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-ghost" onclick="closeAddModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Category</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal-card">
+        <h3 class="h4 text-slate-800 font-bold mb-3">Edit Question Category</h3>
+        <form id="editForm" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="form-group mb-3">
+                <label class="form-label font-semibold text-sm">Category Name</label>
+                <input type="text" name="name" id="editName" class="form-control" required>
+            </div>
+            <div class="form-group mb-4">
+                <label class="form-label font-semibold text-sm">Description (Optional)</label>
+                <textarea name="description" id="editDesc" class="form-control" rows=3></textarea>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-ghost" onclick="closeEditModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Update Category</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const addModal = document.getElementById("addModal");
+    const editModal = document.getElementById("editModal");
+    const editForm = document.getElementById("editForm");
+    const editName = document.getElementById("editName");
+    const editDesc = document.getElementById("editDesc");
+
+    function openAddModal() {
+        addModal.classList.add("active");
+    }
+    function closeAddModal() {
+        addModal.classList.remove("active");
+    }
+
+    function openEditModal(id, name, desc) {
+        editForm.action = `/categories/${id}/edit`;
+        editName.value = name;
+        editDesc.value = desc;
+        editModal.classList.add("active");
+    }
+    function closeEditModal() {
+        editModal.classList.remove("active");
+    }
+
+    // Close on escape key
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+            closeAddModal();
+            closeEditModal();
+        }
+    });
+</script>
+{% endblock %}

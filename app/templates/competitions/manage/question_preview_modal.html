@@ -1,0 +1,108 @@
+<div class="modal-header border-bottom border-slate-100 pb-3">
+    <div class="d-flex align-items-center gap-2">
+        <span class="qbank-badge-type {{ question.question_type }}" style="background: rgba(37, 99, 235, 0.08); color: #2563eb; padding: 0.3rem 0.6rem; border-radius: 99px; font-size: 0.75rem; font-weight: 700;">
+            {{ question.question_type|replace('_', ' ')|capitalize }}
+        </span>
+        <span class="badge" style="
+            {% if question.difficulty == 'easy' %}background: rgba(16, 185, 129, 0.08); color: #10b981;
+            {% elif question.difficulty == 'medium' %}background: rgba(245, 158, 11, 0.08); color: #f59e0b;
+            {% else %}background: rgba(239, 68, 68, 0.08); color: #ef4444;
+            {% endif %} padding: 0.3rem 0.6rem; border-radius: 99px; font-size: 0.75rem; font-weight: 700;">
+            {{ question.difficulty|capitalize }}
+        </span>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+
+<div class="modal-body py-4">
+    <!-- Question Text -->
+    <div class="mb-4">
+        <h4 class="text-slate-800 font-bold mb-2">Question Text</h4>
+        <div class="p-3 bg-slate-50 border border-slate-100 rounded-lg text-slate-700 font-medium" style="white-space: pre-wrap; font-size: 1.05rem; line-height: 1.5;">{{ question.question_text }}</div>
+    </div>
+
+    <!-- Image (if any) -->
+    {% if question.image_path %}
+    <div class="mb-4">
+        <h4 class="text-slate-800 font-bold mb-2">Question Image</h4>
+        <div class="border border-slate-100 rounded-lg p-2 text-center bg-slate-50">
+            <img src="{{ url_for('static', filename=question.image_path) }}" alt="Question Image" style="max-height: 250px; max-width: 100%; border-radius: 8px;">
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Options List -->
+    <div class="mb-4">
+        <h4 class="text-slate-800 font-bold mb-2">Answer Choices</h4>
+        <div class="d-flex flex-column gap-2">
+            {% for opt in question.options %}
+            <div class="d-flex align-items-center justify-content-between p-3 border rounded-xl {% if opt.is_correct %}border-emerald-200 bg-emerald-50/30{% else %}border-slate-100 bg-white{% endif %}">
+                <span class="{% if opt.is_correct %}text-emerald-700 font-semibold{% else %}text-slate-600{% endif %}" style="font-size: 0.95rem;">
+                    {{ opt.option_text }}
+                </span>
+                {% if opt.is_correct %}
+                <span class="badge bg-emerald-500 text-white font-bold px-2 py-1 rounded text-xs">CORRECT</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Explanation (if any) -->
+    {% if question.explanation %}
+    <div class="mb-4">
+        <h4 class="text-slate-800 font-bold mb-2">Explanation</h4>
+        <p class="text-slate-600 text-sm bg-slate-50 p-3 rounded-lg border border-slate-100 m-0">{{ question.explanation }}</p>
+    </div>
+    {% endif %}
+
+    <div class="row g-3">
+        <!-- Reference Book -->
+        <div class="col-md-6">
+            <div class="p-3 border border-slate-100 rounded-xl bg-white h-100">
+                <span class="text-slate-400 text-xs font-bold uppercase tracking-wider d-block mb-1">Book Reference</span>
+                <span class="text-slate-700 font-semibold text-sm">{{ question.book.title if question.book else '— None —' }}</span>
+            </div>
+        </div>
+        <!-- Question Category -->
+        <div class="col-md-6">
+            <div class="p-3 border border-slate-100 rounded-xl bg-white h-100">
+                <span class="text-slate-400 text-xs font-bold uppercase tracking-wider d-block mb-1">Category</span>
+                <span class="text-slate-700 font-semibold text-sm">{{ question.category.name if question.category else '— None —' }}</span>
+            </div>
+        </div>
+    </div>
+
+    <hr class="my-4 border-slate-100">
+
+    <!-- Statistics Panel -->
+    <div>
+        <h4 class="text-slate-800 font-bold mb-3">Performance & Usage Statistics</h4>
+        <div class="row g-2 text-center">
+            <div class="col-6 col-sm-3">
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <span class="text-slate-400 text-xs d-block mb-1">Times Used</span>
+                    <strong class="text-slate-800 text-lg font-bold">{{ stats.times_used }}</strong>
+                </div>
+            </div>
+            <div class="col-6 col-sm-3">
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <span class="text-slate-400 text-xs d-block mb-1">Times Answered</span>
+                    <strong class="text-slate-800 text-lg font-bold">{{ stats.times_answered }}</strong>
+                </div>
+            </div>
+            <div class="col-6 col-sm-3">
+                <div class="p-3 bg-emerald-50/50 rounded-xl border border-emerald-100">
+                    <span class="text-emerald-600 text-xs d-block mb-1">Correct %</span>
+                    <strong class="text-emerald-700 text-lg font-bold">{{ stats.correct_pct }}%</strong>
+                </div>
+            </div>
+            <div class="col-6 col-sm-3">
+                <div class="p-3 bg-rose-50/50 rounded-xl border border-rose-100">
+                    <span class="text-rose-600 text-xs d-block mb-1">Difficulty Index</span>
+                    <strong class="text-rose-700 text-lg font-bold">{{ stats.difficulty_score }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

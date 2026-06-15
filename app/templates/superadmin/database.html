@@ -1,0 +1,146 @@
+{% extends "superadmin/layout.html" %}
+{% block title %}Database & Backups{% endblock %}
+{% block breadcrumb %}Database & Backups{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+    <div class="sa-page-title"><i class="fas fa-database"></i> Database & Backups</div>
+    <div class="sa-page-subtitle">Manage database backups, check health, and restore from archive.</div>
+</div>
+
+<!-- DB Stats -->
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:24px;">
+    <div class="sa-card">
+        <div style="font-size:11px;color:var(--sa-muted);font-weight:600;margin-bottom:6px;text-transform:uppercase;">Engine</div>
+        <div style="font-size:15px;font-weight:700;">PostgreSQL</div>
+    </div>
+    <div class="sa-card">
+        <div style="font-size:11px;color:var(--sa-muted);font-weight:600;margin-bottom:6px;text-transform:uppercase;">Version</div>
+        <div style="font-size:13px;font-weight:600;word-break:break-all;">{{ db_version[:50] }}</div>
+    </div>
+    <div class="sa-card">
+        <div style="font-size:11px;color:var(--sa-muted);font-weight:600;margin-bottom:6px;text-transform:uppercase;">Tables</div>
+        <div style="font-size:26px;font-weight:800;">{{ table_count }}</div>
+    </div>
+    <div class="sa-card">
+        <div style="font-size:11px;color:var(--sa-muted);font-weight:600;margin-bottom:6px;text-transform:uppercase;">Database Size</div>
+        <div style="font-size:22px;font-weight:800;">{{ db_size }}</div>
+    </div>
+</div>
+
+<!-- Backup Controls -->
+<div class="sa-card" style="margin-bottom:24px;">
+    <div class="sa-card-title"><i class="fas fa-cloud-arrow-up"></i> Create New Backup</div>
+    <p style="font-size:13px;color:var(--sa-muted);margin-bottom:16px;">
+        Creates a compressed ZIP archive of the full PostgreSQL database dump.
+        Backups are retained for a maximum of <strong style="color:var(--sa-text)">30 files</strong> — oldest are deleted automatically.
+    </p>
+    <form action="{{ url_for('superadmin.database_backup') }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="sa-btn sa-btn-primary">
+            <i class="fas fa-database"></i> Create Backup Now
+        </button>
+    </form>
+</div>
+
+<!-- Backup List -->
+<div class="sa-card">
+    <div class="sa-card-title"><i class="fas fa-clock-rotate-left"></i> Backup History ({{ backups|length }} files)</div>
+    {% if backups %}
+    <div class="sa-table-wrapper">
+        <table class="sa-table">
+            <thead>
+                <tr>
+                    <th>Filename</th>
+                    <th>Size</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in backups %}
+                <tr>
+                    <td><i class="fas fa-file-zipper" style="color:var(--sa-accent2);margin-right:6px;"></i>{{ b.filename }}</td>
+                    <td>{{ b.size }}</td>
+                    <td style="color:var(--sa-muted);">{{ b.created }}</td>
+                    <td>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                            <a href="{{ url_for('superadmin.database_download', filename=b.filename) }}"
+                               class="sa-btn sa-btn-ghost sa-btn-sm">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                            <button onclick="openRestoreModal('{{ b.filename }}')"
+                                    class="sa-btn sa-btn-success sa-btn-sm">
+                                <i class="fas fa-rotate-left"></i> Restore
+                            </button>
+                            <form action="{{ url_for('superadmin.database_delete', filename=b.filename) }}" method="post"
+                                  onsubmit="return confirm('Delete backup {{ b.filename }}?')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="sa-btn sa-btn-danger sa-btn-sm">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:40px;color:var(--sa-muted);">
+        <i class="fas fa-inbox" style="font-size:40px;margin-bottom:12px;display:block;opacity:.4;"></i>
+        No backups found. Create your first backup above.
+    </div>
+    {% endif %}
+</div>
+
+<!-- Restore Modal -->
+<div class="sa-modal-overlay" id="restoreModal">
+    <div class="sa-modal">
+        <div class="sa-modal-title" style="color:#e74c3c;"><i class="fas fa-triangle-exclamation"></i> Confirm Database Restore</div>
+        <div class="sa-modal-desc">
+            You are about to restore the database from <strong id="restoreFilename" style="color:var(--sa-text);"></strong>.
+            <br><br>
+            <strong style="color:#e74c3c;">⚠️ This will overwrite all current data and is IRREVERSIBLE.</strong>
+            <br><br>
+            To confirm, type <code style="background:var(--sa-bg);padding:2px 8px;border-radius:4px;color:#a29bfe;">RESTORE DATABASE</code> below:
+        </div>
+        <form id="restoreForm" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="sa-form-group">
+                <input type="text" id="restoreConfirmInput" name="confirm_text"
+                       class="sa-form-input" placeholder="Type: RESTORE DATABASE"
+                       oninput="checkRestoreInput(this.value)" autocomplete="off">
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button type="button" onclick="closeRestoreModal()" class="sa-btn sa-btn-ghost">Cancel</button>
+                <button type="submit" id="restoreSubmitBtn" class="sa-btn sa-btn-danger" disabled>
+                    <i class="fas fa-rotate-left"></i> Restore Database
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openRestoreModal(filename) {
+    document.getElementById('restoreFilename').textContent = filename;
+    document.getElementById('restoreForm').action = '/superadmin/database/restore/' + filename;
+    document.getElementById('restoreConfirmInput').value = '';
+    document.getElementById('restoreSubmitBtn').disabled = true;
+    document.getElementById('restoreModal').classList.add('open');
+}
+function closeRestoreModal() {
+    document.getElementById('restoreModal').classList.remove('open');
+}
+function checkRestoreInput(val) {
+    document.getElementById('restoreSubmitBtn').disabled = (val.trim() !== 'RESTORE DATABASE');
+}
+document.getElementById('restoreModal').addEventListener('click', function(e) {
+    if (e.target === this) closeRestoreModal();
+});
+</script>
+{% endblock %}

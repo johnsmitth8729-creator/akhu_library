@@ -1,0 +1,238 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Manage Books | Librarian Panel{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/librarian.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="librarian-area">
+    <div class="container">
+        
+        <!-- HEADER -->
+        <div class="page-header lm-books-header">
+            <div class="d-flex align-items-center gap-3">
+                <a href="{{ url_for('librarian.dashboard') }}" class="btn-back-circle" title="Dashboardga qaytish">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+                <div class="lm-books-header-text">
+                    <h1 class="mb-0" style="margin: 0;">Books Inventory</h1>
+                </div>
+            </div>
+            <div class="lm-books-header-actions">
+                <a href="{{ url_for('librarian.add_physical_book') }}" class="btn btn-primary btn-action lm-header-btn">
+                    <i class="fas fa-book"></i> + Physical Book
+                </a>
+                <a href="{{ url_for('librarian.add_digital_book') }}" class="btn btn-gold btn-action lm-header-btn">
+                    <i class="fas fa-file-pdf"></i> + Digital Book
+                </a>
+            </div>
+        </div>
+
+        <!-- FILTERS & SEARCH -->
+        <div class="filters-card">
+            <form method="GET" class="lm-books-filter-form">
+                <div class="search-input-wrapper">
+                    <i class="fas fa-search"></i>
+                    <input type="text" name="q" value="{{ q or '' }}" placeholder="Search by title, author or ISBN..." class="form-input-full">
+                </div>
+
+                <select name="type" class="filter-select">
+                    <option value="">All Types</option>
+                    <option value="physical" {% if book_type == "physical" %}selected{% endif %}>Physical</option>
+                    <option value="digital" {% if book_type == "digital" %}selected{% endif %}>Digital PDF</option>
+                </select>
+
+                <select name="category_id" class="filter-select">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+
+                <select name="status" class="filter-select">
+                    <option value="">All Statuses</option>
+                    <option value="available" {% if status == 'available' %}selected{% endif %}>Available</option>
+                    <option value="low_stock" {% if status == 'low_stock' %}selected{% endif %}>Low Stock</option>
+                    <option value="out_of_stock" {% if status == 'out_of_stock' %}selected{% endif %}>Out of Stock</option>
+                    <option value="active" {% if status == 'active' %}selected{% endif %}>PDF Active</option>
+                </select>
+
+                <div class="lm-books-filter-actions">
+                    <button type="submit" class="btn btn-primary lm-filter-btn fw-bold">
+                        <i class="fas fa-filter"></i> <span>Filter</span>
+                    </button>
+                    {% if q or book_type or category_id or status %}
+                    <a href="{{ url_for('librarian.manage_books') }}" class="btn btn-ghost text-danger lm-filter-clear" title="Clear filters">
+                        <i class="fas fa-times"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
+        <!-- BOOKS GRID LAYOUT -->
+        <div class="lm-books-grid-container">
+            <div class="lm-books-grid">
+                {% for book in pagination.items %}
+                <div class="lm-book-card">
+                    <!-- Book Cover -->
+                    <div class="lm-book-cover-wrapper">
+                        {% if book.cover_image %}
+                        <img src="{{ url_for('static', filename=book.cover_image) }}" class="lm-book-cover" alt="{{ book.title }}" loading="lazy">
+                        {% else %}
+                        <div class="lm-book-cover-placeholder">
+                            <i class="fas fa-book"></i>
+                            <span>NO IMAGE</span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Book Information Details -->
+                    <div class="lm-book-info-block">
+                        <div class="lm-book-title-header">
+                            <a href="{{ url_for('books.detail', book_id=book.id) }}" class="lm-book-title" title="{{ book.title }}">{{ book.title }}</a>
+                            
+                            <!-- Mobile Actions Dropdown menu -->
+                            <div class="lm-card-dropdown">
+                                <button type="button" class="lm-dropdown-trigger" aria-label="Book actions" onclick="toggleCardDropdown(event, this)">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <div class="lm-dropdown-menu">
+                                    <a href="{{ url_for('librarian.edit_physical_book' if book.book_type == 'physical' else 'librarian.edit_digital_book', book_id=book.id) }}" class="lm-dropdown-item">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                    <form action="{{ url_for('librarian.delete_book', book_id=book.id) }}" method="POST" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="lm-dropdown-item text-danger" onclick="return confirm('Delete this book?')">
+                                            <i class="fas fa-trash-alt"></i> Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="lm-book-author">by {{ book.author.fullname if book.author else "Unknown" }}</div>
+
+                        <!-- Badges block -->
+                        <div class="lm-book-badges-row">
+                            {% if book.book_type == 'physical' %}
+                            <span class="badge-status physical"><i class="fas fa-book-open"></i> Physical</span>
+                            {% else %}
+                            <span class="badge-status digital"><i class="fas fa-cloud"></i> Digital</span>
+                            {% endif %}
+                            
+                            {% if book.category %}
+                            <span class="badge-status category"><i class="fas fa-folder"></i> {{ book.category.name }}</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Availability Stock levels -->
+                        <div class="lm-book-stock-container">
+                            {% if book.book_type == 'physical' %}
+                                {% set stock_pct = (book.available_quantity / book.quantity * 100) if book.quantity > 0 else 0 %}
+                                <div class="lm-stock-text">
+                                    {% if book.available_quantity == 0 %}
+                                    <span class="badge-status out-of-stock"><i class="fas fa-times-circle"></i> Out of Stock</span>
+                                    {% elif stock_pct <= 15 %}
+                                    <span class="badge-status low-stock"><i class="fas fa-exclamation-circle"></i> Low Stock</span>
+                                    {% else %}
+                                    <span class="badge-status available"><i class="fas fa-check-circle"></i> Available</span>
+                                    {% endif %}
+                                    <span class="lm-stock-count">{{ book.available_quantity }}/{{ book.quantity }}</span>
+                                </div>
+                                <div class="stock-level-bar">
+                                    <div class="stock-level-fill {% if stock_pct > 50 %}high{% elif stock_pct > 15 %}medium{% else %}low{% endif %}" style="width: {{ stock_pct }}%;"></div>
+                                </div>
+                            {% else %}
+                                <div class="lm-stock-text">
+                                    <span class="badge-status available"><i class="fas fa-check-circle"></i> PDF Active</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Desktop & Tablet Actions bar -->
+                    <div class="lm-book-actions-desktop">
+                        <a href="{{ url_for('librarian.edit_physical_book' if book.book_type == 'physical' else 'librarian.edit_digital_book', book_id=book.id) }}" class="btn btn-ghost btn-sm text-primary" title="Edit">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <form action="{{ url_for('librarian.delete_book', book_id=book.id) }}" method="POST" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-ghost btn-sm text-danger" onclick="return confirm('Delete this book? This will permanently erase the database record.')" title="Delete">
+                                <i class="fas fa-trash-alt"></i> Delete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% else %}
+                <div class="lm-books-empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <h2>No Books Found</h2>
+                    <p class="text-muted">Start building your library collection or adjust your search parameters.</p>
+                    <div class="empty-actions">
+                        <a href="{{ url_for('librarian.add_physical_book') }}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-book"></i> Add Physical
+                        </a>
+                        <a href="{{ url_for('librarian.add_digital_book') }}" class="btn btn-gold btn-sm">
+                            <i class="fas fa-file-pdf"></i> Add Digital
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- PAGINATION -->
+        {% if pagination.pages > 1 %}
+        <div class="pagination-wrapper">
+            {% if pagination.has_prev %}
+                <a href="{{ url_for('librarian.manage_books', page=pagination.prev_num, q=q, type=book_type, category_id=category_id, status=status) }}" class="page-btn">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            {% endif %}
+            <div class="page-info">
+                Page <strong>{{ pagination.page }}</strong> of {{ pagination.pages }}
+            </div>
+            {% if pagination.has_next %}
+                <a href="{{ url_for('librarian.manage_books', page=pagination.next_num, q=q, type=book_type, category_id=category_id, status=status) }}" class="page-btn">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Toggle three-dot dropdowns
+    function toggleCardDropdown(event, button) {
+        event.stopPropagation();
+        const menu = button.nextElementSibling;
+        
+        // Close all other dropdown menus
+        document.querySelectorAll('.lm-dropdown-menu').forEach(item => {
+            if (item !== menu) {
+                item.classList.remove('active');
+            }
+        });
+        
+        menu.classList.toggle('active');
+    }
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.lm-card-dropdown')) {
+            document.querySelectorAll('.lm-dropdown-menu').forEach(menu => {
+                menu.classList.remove('active');
+            });
+        }
+    });
+</script>
+{% endblock %}

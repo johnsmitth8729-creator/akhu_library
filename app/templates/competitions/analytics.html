@@ -1,0 +1,130 @@
+{% extends "layouts/base.html" %}
+{% block title %}Competition Analytics — AKHU Library{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/competition.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="analytics-page">
+    <!-- Header -->
+    <div class="analytics-header">
+        <div>
+            <h1><i class="fas fa-chart-bar me-2"></i>Competition Analytics</h1>
+            <p>Platform-wide statistics and performance overview</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('competitions.manage_list') }}" class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3);">
+                <i class="fas fa-list me-1"></i> Competitions
+            </a>
+        </div>
+    </div>
+
+    <!-- KPI Grid -->
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-icon blue"><i class="fas fa-trophy"></i></div>
+            <div class="kpi-value">{{ data.total_competitions }}</div>
+            <div class="kpi-label">Total Competitions</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon green"><i class="fas fa-rocket"></i></div>
+            <div class="kpi-value">{{ data.published_competitions }}</div>
+            <div class="kpi-label">Published</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon gold"><i class="fas fa-users"></i></div>
+            <div class="kpi-value">{{ data.participants }}</div>
+            <div class="kpi-label">Participants</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon purple"><i class="fas fa-chart-pie"></i></div>
+            <div class="kpi-value">{{ data.average_score }}%</div>
+            <div class="kpi-label">Avg Score</div>
+        </div>
+    </div>
+
+    <!-- Two-column panels -->
+    <div class="analytics-grid">
+        <!-- Most popular competitions -->
+        <div class="analytics-panel">
+            <div class="analytics-panel-header">
+                <i class="fas fa-fire"></i>
+                <h2>Most Popular Competitions</h2>
+            </div>
+            {% if data.popular_competitions %}
+            <div class="rank-list">
+                {% set max_cnt = data.popular_competitions[0][1] if data.popular_competitions else 1 %}
+                {% for title, cnt in data.popular_competitions %}
+                <div class="rank-item">
+                    <div class="rank-num {% if loop.index==1 %}top1{% elif loop.index==2 %}top2{% elif loop.index==3 %}top3{% endif %}">
+                        {{ loop.index }}
+                    </div>
+                    <div class="rank-body">
+                        <div class="rank-title">{{ title }}</div>
+                        <div class="rank-sub">{{ cnt }} attempt{{ 's' if cnt != 1 }}</div>
+                    </div>
+                    <div class="rank-count">{{ cnt }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-panel"><i class="fas fa-chart-bar"></i>No data yet</div>
+            {% endif %}
+        </div>
+
+        <!-- Most active participants -->
+        <div class="analytics-panel">
+            <div class="analytics-panel-header">
+                <i class="fas fa-medal"></i>
+                <h2>Most Active Participants</h2>
+            </div>
+            {% if data.top_participants %}
+            <div class="rank-list">
+                {% for name, attempts, best in data.top_participants %}
+                <div class="rank-item">
+                    <div class="rank-num {% if loop.index==1 %}top1{% elif loop.index==2 %}top2{% elif loop.index==3 %}top3{% endif %}">
+                        {{ loop.index }}
+                    </div>
+                    <div class="rank-body">
+                        <div class="rank-title">{{ name }}</div>
+                        <div class="rank-sub">Best: {{ best|round(1) }}%</div>
+                    </div>
+                    <div class="rank-count">{{ attempts }} quiz{{ 'zes' if attempts != 1 else '' }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-panel"><i class="fas fa-users"></i>No participant data yet</div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if data.score_distribution %}
+    <!-- Score Distribution -->
+    <div class="analytics-panel" style="margin-bottom: 2rem;">
+        <div class="analytics-panel-header">
+            <i class="fas fa-wave-square"></i>
+            <h2>Score Distribution</h2>
+        </div>
+        <div class="bar-chart">
+            {% set ranges = [('0–20%', data.score_distribution.get('0_20', 0)),
+                             ('21–40%', data.score_distribution.get('21_40', 0)),
+                             ('41–60%', data.score_distribution.get('41_60', 0)),
+                             ('61–80%', data.score_distribution.get('61_80', 0)),
+                             ('81–100%', data.score_distribution.get('81_100', 0))] %}
+            {% set max_range = ranges|map(attribute=1)|max or 1 %}
+            {% set colors = ['#ef4444','#f59e0b','#3b82f6','#10b981','#6366f1'] %}
+            {% for label, count in ranges %}
+            <div class="bar-row">
+                <div class="bar-label">{{ label }}</div>
+                <div class="bar-track">
+                    <div class="bar-fill" style="width: {{ (count / max_range * 100)|round }}%; background: {{ colors[loop.index0] }};"></div>
+                </div>
+                <div class="bar-val">{{ count }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,189 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Website Logs | Admin Panel{% endblock %}
+
+{% block content %}
+<section class="admin-dashboard-page admin-dashboard-revamp admin-logs-page">
+    <div class="dashboard-hero-admin logs-hero">
+        <div class="dashboard-hero-copy">
+            <span class="eyebrow">Audit Center</span>
+            <h1>Website Logs</h1>
+            <p>Review every recorded system event, user action, and operational update from one centralized workspace.</p>
+            <div class="header-actions">
+                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-ghost">
+                    <i class="fas fa-arrow-left"></i>
+                    Dashboard
+                </a>
+                <a href="{{ url_for('admin.statistics') }}" class="btn btn-ghost">
+                    <i class="fas fa-chart-line"></i>
+                    Statistics
+                </a>
+                <a href="{{ url_for('admin.export_activities', q=q) }}" class="btn btn-gold">
+                    <i class="fas fa-file-export"></i>
+                    Export Logs
+                </a>
+            </div>
+        </div>
+        <div class="dashboard-hero-stats">
+            <div class="hero-mini-stat">
+                <span>Total Log Records</span>
+                <strong>{{ log_count }}</strong>
+                <small>Centralized history for the full platform</small>
+            </div>
+            <div class="hero-mini-stat">
+                <span>Current Page</span>
+                <strong>{{ pagination.page }}</strong>
+                <small>{{ pagination.pages or 1 }} total pages</small>
+            </div>
+            <div class="hero-mini-stat">
+                <span>Visible Rows</span>
+                <strong>{{ pagination.items|length }}</strong>
+                <small>Latest filtered events shown below</small>
+            </div>
+        </div>
+    </div>
+
+    <section class="admin-panel logs-toolbar-panel">
+        <div class="panel-header logs-toolbar">
+            <div>
+                <h2>Filter Logs</h2>
+                <p>Search by action, fullname, username, email, faculty, or group.</p>
+            </div>
+            <form method="get" class="logs-search-form">
+                <div class="search-shell">
+                    <i class="fas fa-search"></i>
+                    <input
+                        type="text"
+                        name="q"
+                        value="{{ q }}"
+                        placeholder="Search logs, user, faculty, action..."
+                    >
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-filter"></i>
+                    Search
+                </button>
+                {% if q %}
+                    <a href="{{ url_for('admin.activity') }}" class="btn btn-ghost">
+                        <i class="fas fa-rotate-left"></i>
+                        Reset
+                    </a>
+                {% endif %}
+            </form>
+        </div>
+    </section>
+
+    <section class="admin-panel">
+        <div class="panel-header">
+            <div>
+                <h2>Recorded Events</h2>
+                <p>Chronological operational history for admins and librarians.</p>
+            </div>
+        </div>
+
+        {% if pagination.items %}
+            <div class="modern-table-wrap logs-table-wrap">
+                <table class="modern-table logs-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Actor</th>
+                            <th>Contact</th>
+                            <th>Academic</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in pagination.items %}
+                            <tr>
+                                <td>
+                                    <strong>{{ log.created_at.strftime('%Y-%m-%d') if log.created_at else 'N/A' }}</strong>
+                                    <div class="small muted">{{ log.created_at.strftime('%H:%M:%S') if log.created_at else '' }}</div>
+                                </td>
+                                <td>
+                                    <div class="log-actor">
+                                        <span class="log-avatar">
+                                            {% if log.user %}
+                                                {{ (log.user.fullname or log.user.username)[0].upper() }}
+                                            {% else %}
+                                                <i class="fas fa-server"></i>
+                                            {% endif %}
+                                        </span>
+                                        <div>
+                                            <strong>{{ log.user.fullname if log.user and log.user.fullname else 'System' }}</strong>
+                                            <div class="small muted">
+                                                {% if log.user %}
+                                                    @{{ log.user.username }} · {{ log.user.role|capitalize }}
+                                                {% else %}
+                                                    Platform event
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if log.user %}
+                                        <strong>{{ log.user.email }}</strong>
+                                        <div class="small muted">ID {{ log.user.id }}</div>
+                                    {% else %}
+                                        <span class="small muted">System generated</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if log.user and log.user.role == 'user' %}
+                                        <strong>{{ log.user.faculty_display or 'Not set' }}</strong>
+                                        <div class="small muted">{{ log.user.group_name or 'No group' }}</div>
+                                    {% elif log.user %}
+                                        <strong>Staff account</strong>
+                                        <div class="small muted">{{ log.user.role|capitalize }}</div>
+                                    {% else %}
+                                        <span class="small muted">Core service</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="log-action-chip">
+                                        <i class="fas fa-circle"></i>
+                                        <span>{{ log.action }}</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if pagination.pages > 1 %}
+                <nav class="logs-pagination" aria-label="Logs pagination">
+                    {% if pagination.has_prev %}
+                        <a href="{{ url_for('admin.activity', page=pagination.prev_num, q=q) }}" class="btn btn-ghost">
+                            <i class="fas fa-chevron-left"></i>
+                            Previous
+                        </a>
+                    {% else %}
+                        <span class="btn btn-ghost disabled">
+                            <i class="fas fa-chevron-left"></i>
+                            Previous
+                        </span>
+                    {% endif %}
+
+                    <span class="pagination-status">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+
+                    {% if pagination.has_next %}
+                        <a href="{{ url_for('admin.activity', page=pagination.next_num, q=q) }}" class="btn btn-ghost">
+                            Next
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    {% else %}
+                        <span class="btn btn-ghost disabled">
+                            Next
+                            <i class="fas fa-chevron-right"></i>
+                        </span>
+                    {% endif %}
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="empty-box">No logs match the current filter.</div>
+        {% endif %}
+    </section>
+</section>
+{% endblock %}

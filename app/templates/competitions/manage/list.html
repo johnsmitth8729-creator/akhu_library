@@ -1,0 +1,132 @@
+{% extends "layouts/base.html" %}
+{% block title %}Manage Competitions - AKHU Library{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/competition.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="competition-page">
+    <div class="manage-header">
+        <div>
+            <h1><i class="fas fa-trophy"></i> Reading Competitions</h1>
+            <p>Create, publish, close, and review reading competitions.</p>
+        </div>
+        <div class="toolbar-group">
+            <a href="{{ url_for('competitions.manage_create') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> New competition
+            </a>
+            {% if current_user.is_admin %}
+            <a href="{{ url_for('competitions.analytics') }}" class="btn btn-gold">
+                <i class="fas fa-chart-line"></i> Analytics
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="filters-bar">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="compSearch" placeholder="Search competitions" oninput="filterCompetitions()">
+        </div>
+        <button type="button" class="filter-pill active" onclick="filterByStatus('all', this)">All</button>
+        <button type="button" class="filter-pill" onclick="filterByStatus('draft', this)">Draft</button>
+        <button type="button" class="filter-pill" onclick="filterByStatus('published', this)">Published</button>
+        <button type="button" class="filter-pill" onclick="filterByStatus('closed', this)">Closed</button>
+        <span class="ms-auto small" id="compCount">{{ competitions|length }} competition{{ 's' if competitions|length != 1 }}</span>
+    </div>
+
+    {% if competitions %}
+    <div class="comp-cards" id="compCards">
+        {% for c in competitions %}
+        {% set lifecycle = c.lifecycle_status %}
+        <article class="comp-card" data-title="{{ c.title|lower }}" data-status="{{ c.status }}">
+            <div class="comp-card-v2-header">
+                <span class="comp-status-badge {{ 'published' if lifecycle == 'active' else ('closed' if lifecycle in ['ended', 'archived'] else 'draft') }}">
+                    <i class="fas fa-circle"></i> {{ lifecycle|title }}
+                </span>
+                <h3 class="mt-2">{{ c.title }}</h3>
+            </div>
+
+            <div class="comp-card-v2-body">
+                <div class="comp-card-v2-meta">
+                    <div class="comp-card-v2-meta-row">
+                        <i class="fas fa-calendar"></i>
+                        {{ c.start_date.strftime('%d %b %Y') }} - {{ c.end_date.strftime('%d %b %Y') }}
+                    </div>
+                    <div class="comp-card-v2-meta-row">
+                        <i class="fas fa-layer-group"></i>
+                        {{ c.competition_type|replace('_', ' ')|title }}
+                    </div>
+                    <div class="comp-card-v2-meta-row">
+                        <i class="fas fa-list-check"></i>
+                        {{ c.question_count }} questions
+                    </div>
+                    {% if c.time_limit_minutes %}
+                    <div class="comp-card-v2-meta-row">
+                        <i class="fas fa-clock"></i>
+                        {{ c.time_limit_minutes }} min
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="comp-card-v2-footer">
+                <div class="comp-card-actions">
+                    <a href="{{ url_for('competitions.manage_edit', competition_id=c.id) }}" class="btn btn-ghost btn-sm" title="Edit">
+                        <i class="fas fa-pen-to-square"></i> Edit
+                    </a>
+                    <a href="{{ url_for('competitions.manage_results', competition_id=c.id) }}" class="btn btn-ghost btn-sm" title="Results">
+                        <i class="fas fa-chart-column"></i> Results
+                    </a>
+                    <a href="{{ url_for('competitions.leaderboard', competition_id=c.id) }}" class="btn btn-ghost btn-sm" title="Leaderboard">
+                        <i class="fas fa-crown"></i> Leaderboard
+                    </a>
+                    {% if c.status == 'draft' %}
+                    <form method="post" action="{{ url_for('competitions.publish_competition', competition_id=c.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-primary btn-sm" type="submit">
+                            <i class="fas fa-rocket"></i> Publish
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-trophy"></i>
+        <h3>No competitions yet</h3>
+        <p>Create the first reading competition for your students.</p>
+        <a href="{{ url_for('competitions.manage_create') }}" class="btn btn-primary mt-3">
+            <i class="fas fa-plus"></i> Create competition
+        </a>
+    </div>
+    {% endif %}
+</section>
+
+<script>
+let currentStatus = "all";
+
+function filterCompetitions() {
+    const query = document.getElementById("compSearch").value.toLowerCase();
+    let visible = 0;
+    document.querySelectorAll(".comp-card").forEach((card) => {
+        const matchesTitle = card.dataset.title.includes(query);
+        const matchesStatus = currentStatus === "all" || card.dataset.status === currentStatus;
+        const show = matchesTitle && matchesStatus;
+        card.style.display = show ? "" : "none";
+        if (show) visible += 1;
+    });
+    document.getElementById("compCount").textContent = `${visible} competition${visible === 1 ? "" : "s"}`;
+}
+
+function filterByStatus(status, button) {
+    currentStatus = status;
+    document.querySelectorAll(".filter-pill").forEach((item) => item.classList.remove("active"));
+    button.classList.add("active");
+    filterCompetitions();
+}
+</script>
+{% endblock %}

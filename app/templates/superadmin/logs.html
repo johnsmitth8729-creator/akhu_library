@@ -1,0 +1,62 @@
+{% extends "superadmin/layout.html" %}
+{% block title %}App Logs{% endblock %}
+{% block breadcrumb %}App Logs{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+    <div class="sa-page-title"><i class="fas fa-terminal"></i> Application Logs</div>
+    <div class="sa-page-subtitle">Last 200 lines of the application log file. Scroll to the bottom for latest entries.</div>
+</div>
+
+<div class="sa-card">
+    {% if log_lines %}
+    <div id="logContainer" style="
+        background: #0d0d14;
+        border: 1px solid var(--sa-border);
+        border-radius: 10px;
+        padding: 16px;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        line-height: 1.8;
+        max-height: 70vh;
+        overflow-y: auto;
+        color: #c0caf5;
+    ">
+        {% for line in log_lines %}
+        {% set line_stripped = line.strip() %}
+        {% if 'ERROR' in line_stripped or 'CRITICAL' in line_stripped %}
+        <div style="color:#ff7675;">{{ line_stripped }}</div>
+        {% elif 'WARNING' in line_stripped or 'WARN' in line_stripped %}
+        <div style="color:#fdcb6e;">{{ line_stripped }}</div>
+        {% elif 'INFO' in line_stripped %}
+        <div style="color:#74b9ff;">{{ line_stripped }}</div>
+        {% elif 'DEBUG' in line_stripped %}
+        <div style="color:#636e72;">{{ line_stripped }}</div>
+        {% else %}
+        <div>{{ line_stripped }}</div>
+        {% endif %}
+        {% endfor %}
+    </div>
+    <div style="margin-top:12px;display:flex;justify-content:flex-end;">
+        <button onclick="scrollToBottom()" class="sa-btn sa-btn-ghost sa-btn-sm">
+            <i class="fas fa-arrow-down"></i> Scroll to Latest
+        </button>
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:60px;color:var(--sa-muted);">
+        <i class="fas fa-terminal" style="font-size:48px;opacity:.3;display:block;margin-bottom:12px;"></i>
+        No log file found. Application logs may not be configured.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function scrollToBottom() {
+    const c = document.getElementById('logContainer');
+    if (c) c.scrollTop = c.scrollHeight;
+}
+scrollToBottom(); // Auto-scroll on load
+</script>
+{% endblock %}

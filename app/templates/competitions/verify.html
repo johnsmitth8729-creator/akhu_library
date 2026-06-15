@@ -1,0 +1,81 @@
+{% extends "layouts/base.html" %}
+{% block title %}Verify Certificate — AKHU Library{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/competition.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="verify-page">
+    <div class="verify-card">
+        <!-- Header -->
+        <div class="verify-header">
+            <div class="verify-shield">
+                <i class="fas fa-shield-halved"></i>
+            </div>
+            <h1>Certificate Verified</h1>
+            <p>This certificate has been authenticated by AKHU Library</p>
+        </div>
+
+        <!-- Body -->
+        <div class="verify-body">
+            <!-- Verification code -->
+            <div class="text-center">
+                <div class="verify-code-chip">
+                    <i class="fas fa-fingerprint"></i>
+                    {{ cert.verification_code }}
+                </div>
+            </div>
+
+            <!-- Score ring -->
+            <div class="verify-score-ring">
+                <div class="score-circle">
+                    <div class="score-circle-inner">{{ cert.percentage }}%</div>
+                </div>
+                <h3>{{ cert.user.fullname if cert.user else '—' }}</h3>
+                <p>
+                    Position <strong>#{{ cert.position }}</strong>
+                    {% if cert.medal %}&nbsp;·&nbsp;<i class="fas fa-medal"></i> {{ cert.medal|capitalize }} Medal{% endif %}
+                </p>
+            </div>
+
+            <!-- Info grid -->
+            <div class="verify-info-grid">
+                <div class="verify-info-item">
+                    <div class="verify-info-label"><i class="fas fa-trophy me-1"></i>Competition</div>
+                    <div class="verify-info-value">{{ cert.competition.title if cert.competition else '—' }}</div>
+                </div>
+                <div class="verify-info-item">
+                    <div class="verify-info-label"><i class="fas fa-star me-1"></i>Score</div>
+                    <div class="verify-info-value">{{ cert.score }} pts</div>
+                    <div class="verify-info-sub">{{ cert.percentage }}% correct</div>
+                </div>
+                <div class="verify-info-item">
+                    <div class="verify-info-label"><i class="fas fa-calendar me-1"></i>Issued On</div>
+                    <div class="verify-info-value">{{ cert.issued_at.strftime('%d %B %Y') }}</div>
+                </div>
+                <div class="verify-info-item">
+                    <div class="verify-info-label"><i class="fas fa-graduation-cap me-1"></i>Issuing Body</div>
+                    <div class="verify-info-value">AKHU Library</div>
+                    <div class="verify-info-sub">Official Digital Record</div>
+                </div>
+            </div>
+
+            <!-- Valid stamp -->
+            <div class="valid-stamp">
+                <div class="valid-stamp-icon"><i class="fas fa-circle-check"></i></div>
+                <div class="valid-stamp-text">
+                    <h4>Authenticity Confirmed</h4>
+                    <p>This certificate is genuine and recorded in the AKHU Library system.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="verify-footer">
+            <span><i class="fas fa-lock me-1"></i> Secure verification</span>
+            <span>AKHU Digital Library Platform</span>
+            <span>{{ cert.issued_at.strftime('%Y') }}</span>
+        </div>
+    </div>
+</div>
+{% endblock %}

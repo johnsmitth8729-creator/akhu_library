@@ -1,0 +1,40 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<section class="admin-dashboard-page admin-dashboard-slim">
+    <div class="dashboard-hero-admin dashboard-hero-clean">
+        <div class="dashboard-hero-copy">
+            <span class="eyebrow">Admin Control Center</span>
+            <h1>Library administration made simple</h1>
+            <p>Access the core workflows you need every day — users, reports, logs, requests, and system settings.</p>
+        </div>
+
+        <div class="dashboard-actions-panel">
+            <a href="{{ url_for('admin.manage_users') }}" class="btn btn-primary">
+                <i class="fas fa-users-cog"></i>
+                Manage Users
+            </a>
+            <a href="{{ url_for('admin.statistics') }}" class="btn btn-ghost">
+                <i class="fas fa-chart-pie"></i>
+                Statistics
+            </a>
+            <a href="{{ url_for('admin.activity') }}" class="btn btn-ghost">
+                <i class="fas fa-database"></i>
+                Web Site Logs
+            </a>
+            <a href="{{ url_for('librarian.manage_requests') }}" class="btn btn-ghost">
+                <i class="fas fa-inbox"></i>
+                Borrow Requests
+            </a>
+            <a href="{{ url_for('admin.settings') }}" class="btn btn-gold">
+                <i class="fas fa-sliders"></i>
+                System Settings
+            </a>
+        </div>
+
+        <p class="dashboard-note">This dashboard now surfaces only the essential admin controls for faster decision-making.</p>
+    </div>
+</section>
+{% endblock %}

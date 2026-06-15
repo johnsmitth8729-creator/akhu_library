@@ -1,0 +1,343 @@
+<!--
+Al-Khwarizmi Smart Library Platform
+
+Founder:
+Jaloliddin Omonbayev Ravshanbek o‘g‘li
+
+GitHub:
+https://github.com/jaloliddinomonbaev
+
+Telegram:
+https://t.me/jaloliddin_omonbaev
+
+Copyright © 2026
+-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Jaloliddin Omonbayev Ravshanbek o‘g‘li">
+    <meta name="creator" content="Jaloliddin Omonbayev Ravshanbek o‘g‘li">
+    <meta name="copyright" content="Jaloliddin Omonbayev Ravshanbek o‘g‘li">
+    <meta name="designer" content="Jaloliddin Omonbayev">
+    <meta name="developer" content="Jaloliddin Omonbayev">
+    <meta name="application-name" content="Al-Khwarizmi Smart Library">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Al-Khwarizmi Smart Library",
+      "operatingSystem": "All",
+      "applicationCategory": "EducationalApplication",
+      "creator": {
+        "@type": "Person",
+        "name": "Jaloliddin Omonbayev Ravshanbek o‘g‘li",
+        "email": "jaloliddinomonboev@gmail.com",
+        "url": "https://github.com/jaloliddinomonbaev",
+        "jobTitle": "Founder & Lead Developer"
+      },
+      "author": {
+        "@type": "Person",
+        "name": "Jaloliddin Omonbayev Ravshanbek o‘g‘li",
+        "url": "https://github.com/jaloliddinomonbaev"
+      },
+      "maintainer": {
+        "@type": "Person",
+        "name": "Jaloliddin Omonbayev Ravshanbek o‘g‘li",
+        "email": "jaloliddinomonboev@gmail.com",
+        "url": "https://t.me/jaloliddin_omonbaev"
+      },
+      "sameAs": [
+        "https://github.com/jaloliddinomonbaev",
+        "https://t.me/jaloliddin_omonbaev",
+        "https://instagram.com/jaloliddin_omonbaev"
+      ]
+    }
+    </script>
+
+    <title>
+        {% block title %}
+            Al-Khwarizmi Smart Library
+        {% endblock %}
+    </title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/modals.css') }}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/statistics.css') }}"
+    >
+
+    {% block head_extra %}{% endblock %}
+</head>
+
+<body>
+
+    {% if is_impersonating %}
+    <div class="impersonation-warning-banner">
+        <span><i class="fas fa-user-secret"></i> You are currently impersonating a user.</span>
+        <a href="{{ url_for('superadmin.exit_impersonation') }}">
+            <i class="fas fa-arrow-right-from-bracket"></i> Exit Impersonation
+        </a>
+    </div>
+    {% endif %}
+
+    <header class="navbar">
+        <div class="container nav-inner">
+
+            <a href="{{ url_for('main.home') }}" class="logo">
+                <span class="logo-mark">
+                    <img
+                        src="{{ url_for('static', filename='images/logo.png') }}"
+                        alt="Al-Khwarizmi University"
+                    >
+                </span>
+
+                <span class="logo-text">
+                    <span class="logo-title">Al-Khwarizmi</span>
+                    <span class="logo-subtitle">Smart Library</span>
+                </span>
+            </a>
+
+            <button
+                class="mobile-menu-btn"
+                id="mobileMenuBtn"
+                type="button"
+                aria-label="Open menu"
+            >
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <nav class="nav-links" id="mobileMenu">
+                <a href="{{ url_for('main.home') }}">
+                    <i class="fas fa-house"></i>
+                    <span>Home</span>
+                </a>
+
+                <a href="{{ url_for('books.index') }}">
+                    <i class="fas fa-book-open"></i>
+                    <span>Library</span>
+                </a>
+
+                {% if current_user.is_authenticated %}
+                    {% if not current_user.is_staff %}
+                        <a href="{{ url_for('user.dashboard') }}">
+                            <i class="fas fa-bookmark"></i>
+                            <span>My Books</span>
+                        </a>
+                        <a href="{{ url_for('competitions.index') }}">
+                            <i class="fas fa-trophy"></i>
+                            <span>Competitions</span>
+                        </a>
+                    {% endif %}
+
+                    {% if current_user.is_librarian or current_user.is_admin %}
+                        <a href="{{ url_for('librarian.dashboard') }}">
+                            <i class="fas fa-clipboard-check"></i>
+                            <span>Librarian</span>
+                        </a>
+                        <a href="{{ url_for('competitions.manage_list') }}">
+                            <i class="fas fa-trophy"></i>
+                            <span>Competitions</span>
+                        </a>
+                    {% endif %}
+
+                    {% if current_user.is_admin %}
+                        <a href="{{ url_for('admin.dashboard') }}">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Admin</span>
+                        </a>
+                    {% endif %}
+                {% endif %}
+            </nav>
+
+            <div class="nav-actions">
+                {% if current_user.is_authenticated %}
+
+                    <div class="notification-wrapper">
+                        <button
+                            class="notification-icon-btn"
+                            id="notificationBtn"
+                            type="button"
+                            aria-label="Notifications"
+                        >
+                            <i class="fas fa-bell"></i>
+
+                            {% if unread_notifications > 0 %}
+                                <span class="notification-badge">
+                                    {{ unread_notifications }}
+                                </span>
+                            {% endif %}
+                        </button>
+
+                        <div
+                            class="notification-dropdown"
+                            id="notificationDropdown"
+                        >
+                            <div class="notification-header">
+                                <div>
+                                    <h4>Notifications</h4>
+                                    <span>
+                                        Latest updates from your library account
+                                    </span>
+                                </div>
+                            </div>
+
+                            {% if navbar_notifications %}
+                                <div class="notification-list">
+                                    {% for notification in navbar_notifications %}
+                                        <div class="notification-item">
+                                            <span class="notification-dot"></span>
+
+                                            <div class="notification-content">
+                                                <p>
+                                                    {{ notification.message }}
+                                                </p>
+
+                                                <span>
+                                                    {{ notification.created_at.strftime('%d %b %Y %H:%M') }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="notification-footer">
+                                    <a href="{{ url_for('user.notifications') }}">
+                                        View all notifications
+                                    </a>
+                                </div>
+                            {% else %}
+                                <div class="empty-notifications">
+                                    <i class="fas fa-bell-slash"></i>
+                                    <span>No notifications yet.</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <a href="{{ url_for('user.profile') }}" class="nav-user" style="text-decoration: none; color: inherit;">
+                        <span class="user-avatar" style="overflow: hidden;">
+                            {% if current_user.avatar %}
+                                <img src="{{ url_for('static', filename=current_user.avatar) }}" alt="Avatar" style="width:100%; height:100%; object-fit:cover;">
+                            {% else %}
+                                {{ current_user.fullname[0]|upper }}
+                            {% endif %}
+                        </span>
+
+                        <span class="hello">
+                            Hi, {{ current_user.fullname.split()[0] }}
+                        </span>
+                    </a>
+
+                    <a
+                        class="logout-link"
+                        href="{{ url_for('auth.logout') }}"
+                    >
+                        <i class="fas fa-arrow-right-from-bracket"></i>
+                        <span>Logout</span>
+                    </a>
+
+                {% else %}
+
+                    <a
+                        class="nav-login"
+                        href="{{ url_for('auth.login') }}"
+                    >
+                        Sign in
+                    </a>
+
+                    <a
+                        class="nav-register"
+                        href="{{ url_for('auth.register') }}"
+                    >
+                        Get started
+                    </a>
+
+                {% endif %}
+        </div>
+        </div>
+        {% if active_banner %}
+        <div class="global-banner banner-{{ active_banner.banner_type }}">
+            <div class="container global-banner-container">
+                <div class="global-banner-track speed-{{ active_banner.scroll_speed }}">
+                    {% if active_banner.banner_icon %}
+                        <span class="banner-icon" style="margin-right: 8px;">{{ active_banner.banner_icon }}</span>
+                    {% endif %}
+                    <span class="banner-text">{{ active_banner.banner_text }}</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </header>
+
+    <main class="page">
+        <div class="container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flashes">
+                        {% for cat, msg in messages %}
+                            <div class="flash flash-{{ cat }}">
+                                {{ msg }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}
+            {% endblock %}
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container footer-inner">
+            <div>
+                <strong>Al-Khwarizmi University</strong>
+                <p>
+                    Smart Library Platform — built for students, librarians and faculty.
+                </p>
+            </div>
+
+            <div class="muted" style="display: flex; flex-direction: column; gap: 4px; align-items: flex-end; text-align: right;">
+                <span>© {{ now.year }} Al-Khwarizmi University. All rights reserved.</span>
+                <span style="opacity: 0.6; font-size: 11px;">
+                    Designed & Developed by <a href="https://t.me/jaloliddin_omonbaev" target="_blank" style="color: inherit; text-decoration: underline;">Jaloliddin Omonbayev</a>
+                </span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modals.js') }}"></script>
+
+    {% block scripts %}
+    {% endblock %}
+
+</body>
+
+</html>

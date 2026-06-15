@@ -1,0 +1,171 @@
+{% extends "superadmin/layout.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block breadcrumb %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+    <div class="sa-page-title"><i class="fas fa-gauge-high"></i> System Dashboard</div>
+    <div class="sa-page-subtitle">Real-time overview of the Al-Khwarizmi Smart Library Platform.</div>
+</div>
+
+<!-- KPI Grid -->
+<div class="sa-kpi-grid">
+    <div class="sa-kpi-card">
+        <div class="sa-kpi-icon" style="background:rgba(108,92,231,.15);color:#a29bfe"><i class="fas fa-users"></i></div>
+        <div class="sa-kpi-value">{{ total_users }}</div>
+        <div class="sa-kpi-label">Total Users</div>
+    </div>
+    <div class="sa-kpi-card">
+        <div class="sa-kpi-icon" style="background:rgba(116,185,255,.15);color:#74b9ff"><i class="fas fa-user-tie"></i></div>
+        <div class="sa-kpi-value">{{ total_admins }}</div>
+        <div class="sa-kpi-label">Admins</div>
+    </div>
+    <div class="sa-kpi-card">
+        <div class="sa-kpi-icon" style="background:rgba(0,184,148,.15);color:#00b894"><i class="fas fa-book"></i></div>
+        <div class="sa-kpi-value">{{ total_books }}</div>
+        <div class="sa-kpi-label">Total Books</div>
+    </div>
+    <div class="sa-kpi-card">
+        <div class="sa-kpi-icon" style="background:rgba(253,203,110,.15);color:#fdcb6e"><i class="fas fa-book-reader"></i></div>
+        <div class="sa-kpi-value">{{ physical_books }}</div>
+        <div class="sa-kpi-label">Physical Books</div>
+    </div>
+    <div class="sa-kpi-card">
+        <div class="sa-kpi-icon" style="background:rgba(162,155,254,.15);color:#a29bfe"><i class="fas fa-tablet-alt"></i></div>
+        <div class="sa-kpi-value">{{ digital_books }}</div>
+        <div class="sa-kpi-label">Digital Books</div>
+    </div>
+    <div class="sa-kpi-card">
+        <div class="sa-kpi-icon" style="background:rgba(231,76,60,.15);color:#ff7675"><i class="fas fa-hand-holding-heart"></i></div>
+        <div class="sa-kpi-value">{{ active_borrows }}</div>
+        <div class="sa-kpi-label">Active Borrows</div>
+    </div>
+    <div class="sa-kpi-card">
+        <div class="sa-kpi-icon" style="background:rgba(253,203,110,.15);color:#fdcb6e"><i class="fas fa-clock"></i></div>
+        <div class="sa-kpi-value">{{ pending_requests }}</div>
+        <div class="sa-kpi-label">Pending Requests</div>
+    </div>
+    <div class="sa-kpi-card">
+        <div class="sa-kpi-icon" style="background:rgba(0,184,148,.15);color:#55efc4"><i class="fas fa-trophy"></i></div>
+        <div class="sa-kpi-value">{{ active_competitions }}</div>
+        <div class="sa-kpi-label">Active Competitions</div>
+    </div>
+    <div class="sa-kpi-card">
+        <div class="sa-kpi-icon" style="background:rgba(108,92,231,.15);color:#a29bfe"><i class="fas fa-bullhorn"></i></div>
+        <div class="sa-kpi-value">{{ active_announcements }}</div>
+        <div class="sa-kpi-label">Announcements</div>
+    </div>
+    <div class="sa-kpi-card">
+        <div class="sa-kpi-icon" style="background:rgba(231,76,60,.15);color:#ff7675"><i class="fas fa-triangle-exclamation"></i></div>
+        <div class="sa-kpi-value">{{ failed_today }}</div>
+        <div class="sa-kpi-label">Failed Logins Today</div>
+    </div>
+    <div class="sa-kpi-card">
+        <div class="sa-kpi-icon" style="background:rgba(116,185,255,.15);color:#74b9ff"><i class="fas fa-book-open"></i></div>
+        <div class="sa-kpi-value">{{ borrows_today }}</div>
+        <div class="sa-kpi-label">Borrows Today</div>
+    </div>
+    <div class="sa-kpi-card">
+        <div class="sa-kpi-icon" style="background:rgba(0,184,148,.15);color:#55efc4"><i class="fas fa-hard-drive"></i></div>
+        <div class="sa-kpi-value" style="font-size:18px;">{{ uploads_size_str }}</div>
+        <div class="sa-kpi-label">Upload Storage</div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:24px;">
+    <!-- User registration chart -->
+    <div class="sa-card">
+        <div class="sa-card-title"><i class="fas fa-chart-line"></i> User Registrations — Last 30 Days</div>
+        <canvas id="regChart" height="120"></canvas>
+    </div>
+    <!-- Role distribution -->
+    <div class="sa-card">
+        <div class="sa-card-title"><i class="fas fa-chart-pie"></i> Role Distribution</div>
+        <canvas id="roleChart" height="120"></canvas>
+    </div>
+</div>
+
+<!-- Quick Links -->
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">
+    <a href="{{ url_for('superadmin.database') }}" class="sa-card" style="text-decoration:none;display:flex;align-items:center;gap:12px;padding:16px;">
+        <div class="sa-kpi-icon" style="background:rgba(108,92,231,.15);color:#a29bfe;margin:0;"><i class="fas fa-database"></i></div>
+        <div><div style="font-weight:600;font-size:13px;">Create Backup</div><div style="font-size:11px;color:var(--sa-muted);">Backup database now</div></div>
+    </a>
+    <a href="{{ url_for('superadmin.emergency') }}" class="sa-card" style="text-decoration:none;display:flex;align-items:center;gap:12px;padding:16px;">
+        <div class="sa-kpi-icon" style="background:rgba(231,76,60,.15);color:#ff7675;margin:0;"><i class="fas fa-triangle-exclamation"></i></div>
+        <div><div style="font-weight:600;font-size:13px;">Emergency Controls</div><div style="font-size:11px;color:var(--sa-muted);">Platform toggles</div></div>
+    </a>
+    <a href="{{ url_for('superadmin.audit') }}" class="sa-card" style="text-decoration:none;display:flex;align-items:center;gap:12px;padding:16px;">
+        <div class="sa-kpi-icon" style="background:rgba(0,184,148,.15);color:#55efc4;margin:0;"><i class="fas fa-list-check"></i></div>
+        <div><div style="font-weight:600;font-size:13px;">Audit Log</div><div style="font-size:11px;color:var(--sa-muted);">System activity</div></div>
+    </a>
+    <a href="{{ url_for('superadmin.users') }}" class="sa-card" style="text-decoration:none;display:flex;align-items:center;gap:12px;padding:16px;">
+        <div class="sa-kpi-icon" style="background:rgba(116,185,255,.15);color:#74b9ff;margin:0;"><i class="fas fa-users"></i></div>
+        <div><div style="font-weight:600;font-size:13px;">User Management</div><div style="font-size:11px;color:var(--sa-muted);">Impersonation & more</div></div>
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const regData = {{ reg_chart | safe }};
+const labels  = [];
+const values  = [];
+// Last 30 days labels
+const today = new Date();
+for (let i = 29; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const key = d.toISOString().split('T')[0];
+    labels.push(key.slice(5)); // MM-DD
+    values.push(regData[key] || 0);
+}
+
+const chartDefaults = {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+        x: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#8892a4', font: { size: 10 } } },
+        y: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#8892a4', font: { size: 10 } }, beginAtZero: true }
+    }
+};
+
+new Chart(document.getElementById('regChart'), {
+    type: 'line',
+    data: {
+        labels,
+        datasets: [{
+            data: values,
+            borderColor: '#6c5ce7',
+            backgroundColor: 'rgba(108,92,231,.1)',
+            fill: true,
+            tension: .4,
+            pointRadius: 2,
+            borderWidth: 2,
+        }]
+    },
+    options: chartDefaults,
+});
+
+new Chart(document.getElementById('roleChart'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Admins', 'Librarians', 'Users'],
+        datasets: [{
+            data: [{{ total_admins }}, {{ total_librarians }}, {{ total_users - total_admins - total_librarians }}],
+            backgroundColor: ['#6c5ce7', '#00b894', '#74b9ff'],
+            borderWidth: 0,
+        }]
+    },
+    options: {
+        responsive: true,
+        cutout: '65%',
+        plugins: {
+            legend: { position: 'bottom', labels: { color: '#8892a4', font: { size: 11 }, padding: 12 } }
+        }
+    }
+});
+</script>
+{% endblock %}

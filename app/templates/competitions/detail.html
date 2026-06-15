@@ -1,0 +1,89 @@
+{% extends "layouts/base.html" %}
+{% block title %}{{ competition.title }}{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/competition.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="competition-page">
+    <a href="{{ url_for('competitions.index') }}" class="btn btn-ghost btn-sm mb-3">
+        <i class="fas fa-arrow-left"></i> All competitions
+    </a>
+
+    <div class="comp-detail-hero">
+        <span class="hero-eyebrow"><i class="fas fa-book-open"></i> {{ competition.competition_type|replace('_', ' ')|title }}</span>
+        <div class="hero-title">{{ competition.title }}</div>
+        <div class="hero-desc">{{ competition.description or 'Test your reading knowledge and climb the leaderboard.' }}</div>
+        <div class="hero-date-badge">
+            <i class="fas fa-calendar"></i>
+            {{ competition.start_date.strftime('%d %b %Y %H:%M') }} - {{ competition.end_date.strftime('%d %b %Y %H:%M') }}
+        </div>
+    </div>
+
+    <div class="admin-layout-grid mb-3">
+        <div class="admin-panel">
+            <h2>Participation</h2>
+            {% if can_enter and can_start %}
+                <form method="post" action="{{ url_for('competitions.start_quiz', competition_id=competition.id) }}" class="mt-3">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-play"></i>
+                        {% if start_msg == 'resume' %}Resume quiz{% else %}Start quiz{% endif %}
+                    </button>
+                </form>
+                <p class="small mt-2">Attempts used: <strong>{{ attempts_used }}</strong> / {{ competition.max_attempts }}</p>
+            {% elif message %}
+                <p class="muted mt-3">{{ message }}</p>
+            {% else %}
+                <p class="muted mt-3">{{ start_msg }}</p>
+            {% endif %}
+
+            {% if my_best %}
+                <div class="comp-card-v2-best">
+                    <span class="best-label">Your best result</span>
+                    <span class="best-value">{{ my_best.percentage }}%</span>
+                </div>
+                <p class="small mt-2">Rank: <strong>#{{ my_best.rank_position or '-' }}</strong></p>
+            {% endif %}
+        </div>
+
+        <div class="admin-panel">
+            <h2>Rules</h2>
+            <div class="comp-card-v2-meta mt-3">
+                <div class="comp-card-v2-meta-row"><i class="fas fa-bullseye"></i> Passing score: {{ competition.passing_score }}%</div>
+                <div class="comp-card-v2-meta-row"><i class="fas fa-rotate"></i> Max attempts: {{ competition.max_attempts }}</div>
+                <div class="comp-card-v2-meta-row"><i class="fas fa-list-check"></i> Questions: {{ competition.question_count }}</div>
+                <div class="comp-card-v2-meta-row"><i class="fas fa-clock"></i> {% if competition.time_limit_minutes %}{{ competition.time_limit_minutes }} minutes{% else %}No time limit{% endif %}</div>
+                {% if competition.secure_quiz_mode %}
+                <div class="comp-card-v2-meta-row"><i class="fas fa-shield-halved"></i> Secure quiz mode enabled</div>
+                {% endif %}
+            </div>
+            <a href="{{ url_for('competitions.leaderboard', competition_id=competition.id) }}" class="btn btn-ghost btn-sm mt-3">
+                <i class="fas fa-crown"></i> Leaderboard
+            </a>
+        </div>
+    </div>
+
+    <div class="admin-panel">
+        <h2>Top winners</h2>
+        <ol class="comp-leaderboard-list mt-2">
+            {% for row in leaderboard %}
+            <li>
+                <span class="comp-rank {% if row.rank_position == 1 %}top1{% elif row.rank_position == 2 %}top2{% elif row.rank_position == 3 %}top3{% endif %}">
+                    {{ row.rank_position }}
+                </span>
+                <div>
+                    <strong>{{ row.user.fullname if row.user else 'User' }}</strong>
+                    <div class="small">{{ row.score }} pts / {{ row.percentage }}%</div>
+                </div>
+                {% if row.medal %}
+                <span class="medal-{{ row.medal }}"><i class="fas fa-medal"></i></span>
+                {% endif %}
+            </li>
+            {% else %}
+            <li class="muted">No results yet.</li>
+            {% endfor %}
+        </ol>
+    </div>
+</section>
+{% endblock %}

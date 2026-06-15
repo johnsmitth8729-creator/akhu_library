@@ -1,0 +1,181 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+Profile
+{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/competition.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="user-dashboard-pro">
+
+
+
+    <div class="profile-shell-pro">
+        <div class="profile-main-card-pro">
+            <div class="profile-cover-pro"></div>
+
+        <div class="profile-body-pro">
+            <div class="profile-avatar-pro">
+                {% if current_user.avatar %}
+                    <img src="{{ url_for('static', filename=current_user.avatar) }}" alt="Avatar" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">
+                {% else %}
+                    {{ current_user.fullname[:1]|upper }}
+                {% endif %}
+            </div>
+
+                <h2>
+                    {{ current_user.fullname }}
+                </h2>
+
+                <p>
+                    @{{ current_user.username }}
+                </p>
+
+            <form method="POST" action="{{ url_for('user.profile') }}" enctype="multipart/form-data">
+                {{ form.hidden_tag() }}
+                
+                <div class="profile-info-grid-pro">
+                    <div class="profile-info-item-pro">
+                        <span>
+                            <i class="fas fa-user"></i>
+                            {{ form.fullname.label }}
+                        </span>
+                        {{ form.fullname(class="form-control", placeholder="Full Name") }}
+                    </div>
+
+                    <div class="profile-info-item-pro">
+                        <span>
+                            <i class="fas fa-user-tag"></i>
+                            {{ form.username.label }}
+                        </span>
+                        {{ form.username(class="form-control", placeholder="Username") }}
+                    </div>
+
+                    <div class="profile-info-item-pro">
+                        <span>
+                            <i class="fas fa-phone"></i>
+                            {{ form.phone_number.label }}
+                        </span>
+                        {{ form.phone_number(class="form-control", placeholder="+998 90 123 45 67") }}
+                    </div>
+
+                    <div class="profile-info-item-pro">
+                        <span>
+                            <i class="fas fa-building-columns"></i>
+                            {{ form.faculty_id.label }}
+                        </span>
+                        {{ form.faculty_id(class="form-control") }}
+                    </div>
+
+                    <div class="profile-info-item-pro">
+                        <span>
+                            <i class="fas fa-users"></i>
+                            {{ form.group_name.label }}
+                        </span>
+                        {{ form.group_name(class="form-control", placeholder="Group") }}
+                    </div>
+
+                    <div class="profile-info-item-pro profile-info-item-wide-pro">
+                        <span>
+                            <i class="fas fa-camera"></i>
+                            {{ form.avatar.label }}
+                        </span>
+                        {{ form.avatar(class="form-control") }}
+                        <small class="muted">Upload a new profile picture (JPG, PNG, WEBP).</small>
+                    </div>
+
+                    <div class="profile-info-item-pro">
+                        <span>
+                            <i class="fas fa-envelope"></i>
+                            Email Address
+                        </span>
+                        <strong>{{ current_user.email }}</strong>
+                    </div>
+
+                    <div class="profile-info-item-pro">
+                        <span>
+                            <i class="fas fa-shield-halved"></i>
+                            Account Role
+                        </span>
+                        <strong>
+                            <span class="badge blue">
+                                {{ current_user.role|capitalize }}
+                            </span>
+                        </strong>
+                    </div>
+
+                    <div class="profile-info-item-pro">
+                        <span>
+                            <i class="fas fa-calendar-days"></i>
+                            Member since
+                        </span>
+                        <strong>{{ current_user.created_at.strftime('%d %B %Y') }}</strong>
+                    </div>
+
+                    <div class="profile-info-item-pro">
+                        <span>
+                            <i class="fas fa-clock"></i>
+                            Last Login
+                        </span>
+                        <strong>
+                            {% if current_user.last_login_at %}
+                                {{ current_user.last_login_at.strftime('%d %b %Y %H:%M') }}
+                            {% else %}
+                                Not available
+                            {% endif %}
+                        </strong>
+                    </div>
+                </div>
+                
+                {% if current_user.is_librarian %}
+                <div class="role-specific-features">
+                    <h4><i class="fas fa-star" style="color: var(--primary);"></i> Librarian Features</h4>
+                    <p class="muted">As a librarian, you have elevated access to manage the library catalog and user requests.</p>
+                </div>
+                {% elif current_user.is_admin %}
+                <div class="role-specific-features">
+                    <h4><i class="fas fa-crown" style="color: var(--gold);"></i> Admin Features</h4>
+                    <p class="muted">As an administrator, you have full control over the platform settings, users, and roles.</p>
+                </div>
+                {% elif current_user.role == 'user' %}
+                <div class="role-specific-features">
+                    <h4><i class="fas fa-trophy" style="color: var(--gold-2);"></i> Reading competitions</h4>
+                    {% if comp_stats %}
+                    <div class="comp-stats-row">
+                        <span class="comp-stat-pill"><strong>{{ comp_stats.joined }}</strong> joined</span>
+                        <span class="comp-stat-pill"><strong>{{ comp_stats.won }}</strong> wins</span>
+                        <span class="comp-stat-pill"><strong>{{ comp_stats.badges }}</strong> badges</span>
+                        {% if comp_stats.best_rank %}<span class="comp-stat-pill">Best <strong>#{{ comp_stats.best_rank }}</strong></span>{% endif %}
+                    </div>
+                    {% endif %}
+                    {% if badges %}
+                    <p class="small muted">Badges earned</p>
+                    <div class="profile-badges-pro">
+                        {% for b in badges %}
+                        <span class="badge gold">{{ b.label }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <a href="{{ url_for('competitions.index') }}" class="btn btn-primary btn-sm">View competitions</a>
+                </div>
+                {% endif %}
+
+                <div class="profile-actions-pro">
+                    {{ form.submit(class="btn btn-primary") }}
+                    
+                    <a href="{{ url_for('auth.change_password') }}" class="btn btn-ghost">
+                        <i class="fas fa-key"></i>
+                        Change Password
+                    </a>
+                </div>
+            </form>
+            </div>
+        </div>
+    </div>
+
+</section>
+{% endblock %}

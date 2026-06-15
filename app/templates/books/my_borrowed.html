@@ -1,0 +1,139 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+My Borrowed Books
+{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/book.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="library-shell-pro">
+
+    <div class="section-header">
+        <div>
+            <h1>My Borrowed Books</h1>
+            <p class="muted">
+                View your active, returned and overdue borrowed books.
+            </p>
+        </div>
+
+        <a href="{{ url_for('user.dashboard') }}" class="btn btn-ghost">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    {% if borrowings %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Book</th>
+                        <th>Borrowed</th>
+                        <th>Deadline</th>
+                        <th>Returned</th>
+                        <th>Return Condition</th>
+                        <th>Final Fine</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for borrow in borrowings %}
+                        <tr>
+                            <td>
+                                <strong>
+                                    {{ borrow.book.title if borrow.book else "Deleted Book" }}
+                                </strong>
+
+                                {% if borrow.book and borrow.book.author %}
+                                    <div class="small muted">
+                                        {{ borrow.book.author.fullname }}
+                                    </div>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {{ borrow.borrowed_at.strftime('%d %b %Y') }}
+                                <div class="small muted">
+                                    {{ borrow.borrowed_at.strftime('%H:%M') }}
+                                </div>
+                            </td>
+
+                            <td>
+                                {{ borrow.return_date.strftime('%d %b %Y') }}
+
+                                {% if borrow.status != "Returned" and borrow.is_overdue %}
+                                    <div class="small danger">
+                                        Deadline passed
+                                    </div>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if borrow.returned_at %}
+                                    {{ borrow.returned_at.strftime('%d %b %Y') }}
+                                    <div class="small muted">
+                                        {{ borrow.returned_at.strftime('%H:%M') }}
+                                    </div>
+                                {% else %}
+                                    <span class="muted small">
+                                        Not returned yet
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                <span class="badge {% if borrow.return_condition == 'lost' %}red{% elif borrow.return_condition == 'damaged' %}gold{% else %}green{% endif %}">
+                                    {{ borrow.return_condition|capitalize }}
+                                </span>
+                                {% if borrow.condition_notes %}
+                                    <div class="small muted">{{ borrow.condition_notes }}</div>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if borrow.final_fine_amount %}
+                                    <strong>{{ "{:,}".format(borrow.final_fine_amount) }} UZS</strong>
+                                    <div class="small {% if borrow.fine_status == 'unpaid' %}danger{% else %}muted{% endif %}">
+                                        {{ borrow.fine_status|capitalize }}
+                                    </div>
+                                {% else %}
+                                    <span class="muted small">No Fine</span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if borrow.status == "Returned" %}
+                                    <span class="badge green">
+                                        Returned
+                                    </span>
+                                {% elif borrow.status == "Overdue" or borrow.is_overdue %}
+                                    <span class="badge red">
+                                        Overdue
+                                    </span>
+                                {% else %}
+                                    <span class="badge blue">
+                                        Borrowed
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="library-empty-pro">
+            <i class="fas fa-book-open"></i>
+            <h3>No Borrowed Books</h3>
+            <p>You have no borrowed book records yet.</p>
+            <a href="{{ url_for('books.index') }}" class="btn btn-primary">
+                Browse Library
+            </a>
+        </div>
+    {% endif %}
+
+</section>
+{% endblock %}

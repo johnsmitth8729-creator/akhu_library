@@ -1,0 +1,158 @@
+{% extends "layouts/base.html" %}
+{% block title %}{% if question %}Edit Question{% else %}Create Question{% endif %} — AKHU Library{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/competition.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="qform-container">
+<div class="qform-card">
+    <div class="qform-header">
+        <h1><i class="fas fa-pen-to-square me-2"></i>{% if question %}Edit Question{% else %}New Question{% endif %}</h1>
+        <p>Build a challenge question with multiple choice options, scoring, and categorisation.</p>
+    </div>
+    <div class="qform-body">
+        <form method="post" enctype="multipart/form-data" id="questionForm">
+            {{ form.csrf_token }}
+
+            <!-- Core Text -->
+            <p class="section-title">Question Content</p>
+            <div class="form-group mb-3">
+                <label class="form-label fw-bold">Question Text <span class="text-danger">*</span></label>
+                {{ form.question_text(class="form-control", rows=4, placeholder="Type the full question prompt here...") }}
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Question Type <span class="text-danger">*</span></label>
+                    {{ form.question_type(class="form-select", id="questionTypeSelect") }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Difficulty</label>
+                    {{ form.difficulty(class="form-select") }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Points</label>
+                    {{ form.points(class="form-control", type="number", min=1, max=1000) }}
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Reference Book (Optional)</label>
+                    {{ form.book_id(class="form-select") }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Category (Optional)</label>
+                    {{ form.category_id(class="form-select") }}
+                </div>
+            </div>
+
+            <!-- Image Upload (shown for image/quote types) -->
+            <div id="imageUploadSection" class="mb-4" style="display:none;">
+                <p class="section-title">Question Image Asset</p>
+                {% if question and question.image_path %}
+                <div class="mb-3 text-center border border-slate-100 rounded-xl p-3 bg-slate-50">
+                    <img src="{{ url_for('static', filename=question.image_path) }}" 
+                         style="max-height:180px; border-radius:10px; object-fit:contain;">
+                    <p class="text-xs text-slate-400 mt-2">Current image. Upload a new one to replace it.</p>
+                </div>
+                {% endif %}
+                {{ form.image_file(class="form-control") }}
+            </div>
+
+            <!-- Options Builder -->
+            <div id="optionsSection" class="mb-4">
+                <p class="section-title">Answer Options</p>
+
+                <!-- Regular options (single / multiple) -->
+                <div id="regularOptions">
+                    <p class="text-sm text-slate-500 mb-2">Drag rows to reorder. Check the box to mark correct answer(s).</p>
+                    <div id="optionsList">
+                        {% if question and question.question_type not in ['true_false'] %}
+                            {% for opt in question.options %}
+                            <div class="option-row {% if opt.is_correct %}is-correct{% endif %}" draggable="true">
+                                <span class="drag-handle"><i class="fas fa-grip-vertical"></i></span>
+                                <input type="text" name="option_text" class="option-text-input" 
+                                       value="{{ opt.option_text }}" placeholder="Option text..." required>
+                                <div class="option-cb-wrap">
+                                    <input type="checkbox" name="correct_option" value="{{ loop.index0 }}"
+                                           class="form-check-input correct-cb"
+                                           {% if opt.is_correct %}checked{% endif %}>
+                                    <label>Correct</label>
+                                </div>
+                                <button type="button" class="option-del-btn" onclick="removeOption(this)">
+                                    <i class="fas fa-xmark"></i>
+                                </button>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="option-row">
+                                <span class="drag-handle"><i class="fas fa-grip-vertical"></i></span>
+                                <input type="text" name="option_text" class="option-text-input" 
+                                       value="" placeholder="Option text..." required>
+                                <div class="option-cb-wrap">
+                                    <input type="checkbox" name="correct_option" value="0"
+                                           class="form-check-input correct-cb">
+                                    <label>Correct</label>
+                                </div>
+                                <button type="button" class="option-del-btn" onclick="removeOption(this)">
+                                    <i class="fas fa-xmark"></i>
+                                </button>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <button type="button" class="btn btn-ghost btn-sm mt-2" onclick="addOption()">
+                        <i class="fas fa-plus me-1"></i> Add Option
+                    </button>
+                    <small class="d-block text-slate-400 mt-1">For single choice, only one "Correct" box may be checked.</small>
+                </div>
+
+                <!-- True/False special UI -->
+                <div id="tfOptions" style="display:none;">
+                    <p class="text-sm text-slate-500 mb-3">Choose which answer is correct for this True/False question:</p>
+                    <input type="hidden" name="correct_option_tf" id="tfCorrectInput" 
+                           value="{{ question.options[0].option_text if question and question.question_type == 'true_false' and question.options[0].is_correct else ('False' if question and question.question_type == 'true_false' else 'True') }}">
+                    <div class="tf-choice-row">
+                        <div class="tf-option {% if not question or question.question_type != 'true_false' or (question.options and question.options[0].is_correct) %}selected-true{% endif %}" 
+                             onclick="selectTF('True')">
+                            <i class="fas fa-check-circle fa-2x text-emerald-500 d-block mb-2"></i>
+                            <strong>TRUE</strong>
+                        </div>
+                        <div class="tf-option {% if question and question.question_type == 'true_false' and question.options and not question.options[0].is_correct %}selected-false{% endif %}" 
+                             onclick="selectTF('False')">
+                            <i class="fas fa-times-circle fa-2x text-rose-500 d-block mb-2"></i>
+                            <strong>FALSE</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Explanation -->
+            <p class="section-title">Solution Explanation (Optional)</p>
+            <div class="form-group mb-4">
+                {{ form.explanation(class="form-control", rows=3, 
+                   placeholder="Explain the correct answer to help students learn from mistakes...") }}
+            </div>
+
+            <!-- Submit -->
+            <div class="d-flex justify-content-between align-items-center pt-3 border-top border-slate-100">
+                <a href="{{ url_for('questions.index') }}" class="btn btn-ghost">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Bank
+                </a>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="fas fa-floppy-disk me-1"></i>
+                        {% if question %}Update Question{% else %}Save Question{% endif %}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/question_options.js') }}"></script>
+{% endblock %}

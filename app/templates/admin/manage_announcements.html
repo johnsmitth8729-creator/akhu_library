@@ -1,0 +1,119 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Manage Announcements | Admin Panel{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="section-header row-between">
+        <div>
+            <h1>Homepage Announcements</h1>
+            <p class="muted">Publish and configure highlight cards, campaigns, events, and maintenance alerts for the homepage.</p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <a href="{{ url_for('admin.settings') }}" class="btn btn-secondary">
+                ⚙️ Back to Settings
+            </a>
+            <a href="{{ url_for('admin.create_announcement') }}" class="btn btn-primary">
+                ➕ Create Announcement
+            </a>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div style="margin-top: 20px; margin-bottom: 20px;">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'error' else 'danger' }}" style="border-radius: 14px; padding: 14px 20px; font-weight: 500;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="card glass" style="margin-top: 24px; padding: 0; overflow: hidden;">
+        <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+                <tr style="background: rgba(11, 59, 111, 0.05); border-bottom: 1px solid #e2e8f0;">
+                    <th style="padding: 16px 20px;">Image</th>
+                    <th style="padding: 16px 20px;">Announcement details</th>
+                    <th style="padding: 16px 20px;">Priority</th>
+                    <th style="padding: 16px 20px;">Status</th>
+                    <th style="padding: 16px 20px;">Schedule Dates</th>
+                    <th style="padding: 16px 20px; text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in announcements %}
+                <tr style="border-bottom: 1px solid #e2e8f0; vertical-align: middle;">
+                    <td style="padding: 16px 20px; width: 100px;">
+                        {% if item.image %}
+                            <img src="{{ url_for('static', filename=item.image) }}" alt="cover" style="width: 80px; height: 50px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1;">
+                        {% else %}
+                            <div style="width: 80px; height: 50px; background: #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                                📢
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 16px 20px;">
+                        <strong style="color: var(--navy); font-size: 1.1rem; display: block; margin-bottom: 4px;">{{ item.title }}</strong>
+                        <span class="muted small" style="display: block; max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ item.description }}</span>
+                        {% if item.link %}
+                            <a href="{{ item.link }}" target="_blank" class="small text-primary" style="display: inline-block; margin-top: 4px; font-weight: 500;">
+                                Link: {{ item.link }}
+                            </a>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 16px 20px;">
+                        {% if item.priority == 'high' %}
+                            <span class="badge badge-danger" style="background-color: #fee2e2; color: #991b1b; padding: 4px 10px; border-radius: 9999px; font-size: 0.8rem; font-weight: 600;">High</span>
+                        {% elif item.priority == 'medium' %}
+                            <span class="badge badge-warning" style="background-color: #fef3c7; color: #92400e; padding: 4px 10px; border-radius: 9999px; font-size: 0.8rem; font-weight: 600;">Medium</span>
+                        {% else %}
+                            <span class="badge badge-info" style="background-color: #e0f2fe; color: #075985; padding: 4px 10px; border-radius: 9999px; font-size: 0.8rem; font-weight: 600;">Low</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 16px 20px;">
+                        {% if item.status == 'active' %}
+                            <span class="badge badge-success" style="background-color: #dcfce7; color: #166534; padding: 4px 10px; border-radius: 9999px; font-size: 0.8rem; font-weight: 600;">Active</span>
+                        {% elif item.status == 'draft' %}
+                            <span class="badge badge-secondary" style="background-color: #f3f4f6; color: #374151; padding: 4px 10px; border-radius: 9999px; font-size: 0.8rem; font-weight: 600;">Draft</span>
+                        {% else %}
+                            <span class="badge badge-muted" style="background-color: #e5e7eb; color: #6b7280; padding: 4px 10px; border-radius: 9999px; font-size: 0.8rem; font-weight: 600;">Archived</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 16px 20px; font-size: 0.9rem; color: #4b5563;">
+                        <div>
+                            <strong>Start:</strong> {{ item.start_date.strftime('%Y-%m-%d') if item.start_date else 'Always' }}
+                        </div>
+                        <div>
+                            <strong>End:</strong> {{ item.end_date.strftime('%Y-%m-%d') if item.end_date else 'Always' }}
+                        </div>
+                        {% if item.end_date and item.end_date < now.date() %}
+                            <span style="color: #ef4444; font-size: 0.8rem; font-weight: 600; display: block; margin-top: 2px;">⚠️ Expired</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 16px 20px; text-align: right;">
+                        <a href="{{ url_for('admin.edit_announcement', id=item.id) }}" class="btn btn-ghost btn-sm" style="margin-right: 8px;">Edit</a>
+                        <form method="post" action="{{ url_for('admin.delete_announcement', id=item.id) }}" style="display: inline-block;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-ghost btn-sm text-danger" onclick="return confirm('Are you sure you want to delete this announcement? This cannot be undone.')">
+                                Delete
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center muted" style="padding: 40px 20px;">
+                        <div style="font-size: 2rem; margin-bottom: 12px;">📢</div>
+                        <p style="margin: 0; font-size: 1.1rem; font-weight: 500;">No announcements published yet.</p>
+                        <p class="small" style="margin: 6px 0 0 0;">Create an announcement to highlight news or events on the library homepage.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

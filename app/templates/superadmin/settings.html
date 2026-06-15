@@ -1,0 +1,131 @@
+{% extends "superadmin/layout.html" %}
+{% block title %}System Settings{% endblock %}
+{% block breadcrumb %}System Settings{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+    <div class="sa-page-title"><i class="fas fa-sliders"></i> System Settings</div>
+    <div class="sa-page-subtitle">Configure platform-wide settings. All changes are logged in the audit trail.</div>
+</div>
+
+<form method="post" action="{{ url_for('superadmin.settings') }}" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <!-- General -->
+    <div class="sa-card" style="margin-bottom:20px;">
+        <div class="sa-card-title"><i class="fas fa-globe"></i> General</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="sa-form-group">
+                <label class="sa-form-label">Site Name</label>
+                <input name="site_name" type="text" class="sa-form-input"
+                       value="{{ current_settings.site_name }}" placeholder="Al-Khwarizmi Smart Library">
+            </div>
+            <div class="sa-form-group">
+                <label class="sa-form-label">Contact Email</label>
+                <input name="contact_email" type="email" class="sa-form-input"
+                       value="{{ current_settings.contact_email }}" placeholder="admin@library.com">
+            </div>
+        </div>
+        <div class="sa-form-group">
+            <label class="sa-form-label">Site Description</label>
+            <textarea name="site_description" class="sa-form-textarea"
+                      placeholder="Brief platform description…">{{ current_settings.site_description }}</textarea>
+        </div>
+    </div>
+
+    <!-- Platform Branding -->
+    <div class="sa-card" style="margin-bottom:20px;">
+        <div class="sa-card-title"><i class="fas fa-palette"></i> Platform Branding</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+            <div class="sa-form-group">
+                <label class="sa-form-label">University Logo (logo.png)</label>
+                <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">
+                    <img src="{{ url_for('static', filename='images/logo.png', v=range(1, 99999)|random) }}" 
+                         alt="Current Logo" style="height:60px;width:60px;object-fit:contain;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:4px;">
+                    <div>
+                        <span class="small" style="display:block;font-weight:600;color:var(--sa-text);">Current Logo</span>
+                        <span class="small muted" style="display:block;">Square/circular format, recommended 200x200 pixels. Allowed: PNG</span>
+                    </div>
+                </div>
+                <input name="logo_file" type="file" class="sa-form-input" accept="image/png">
+            </div>
+            
+            <div class="sa-form-group">
+                <label class="sa-form-label">Homepage Background (home_jpg.png)</label>
+                <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">
+                    <img src="{{ url_for('static', filename='images/home_jpg.png', v=range(1, 99999)|random) }}" 
+                         alt="Current Background" style="height:60px;width:100px;object-fit:cover;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;">
+                    <div>
+                        <span class="small" style="display:block;font-weight:600;color:var(--sa-text);">Current Background</span>
+                        <span class="small muted" style="display:block;">Landscape aspect ratio, recommended 1920x1080 pixels. Allowed: JPG, PNG</span>
+                    </div>
+                </div>
+                <input name="background_file" type="file" class="sa-form-input" accept="image/png, image/jpeg">
+            </div>
+        </div>
+    </div>
+
+    <!-- Limits -->
+    <div class="sa-card" style="margin-bottom:20px;">
+        <div class="sa-card-title"><i class="fas fa-gear"></i> Limits & Timeouts</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="sa-form-group">
+                <label class="sa-form-label">Max Upload Size (MB)</label>
+                <input name="max_upload_mb" type="number" class="sa-form-input"
+                       value="{{ current_settings.max_upload_mb or 50 }}" min="1" max="500">
+            </div>
+            <div class="sa-form-group">
+                <label class="sa-form-label">Session Timeout (seconds)</label>
+                <input name="session_timeout" type="number" class="sa-form-input"
+                       value="{{ current_settings.session_timeout or 3600 }}" min="300">
+            </div>
+        </div>
+    </div>
+
+    <!-- Mail -->
+    <div class="sa-card" style="margin-bottom:20px;">
+        <div class="sa-card-title"><i class="fas fa-envelope"></i> Mail Configuration</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+            <div class="sa-form-group">
+                <label class="sa-form-label">SMTP Server</label>
+                <input name="mail_server" type="text" class="sa-form-input"
+                       value="{{ current_settings.mail_server }}" placeholder="smtp.gmail.com">
+            </div>
+            <div class="sa-form-group">
+                <label class="sa-form-label">SMTP Port</label>
+                <input name="mail_port" type="number" class="sa-form-input"
+                       value="{{ current_settings.mail_port }}" placeholder="587">
+            </div>
+            <div class="sa-form-group">
+                <label class="sa-form-label">SMTP Username</label>
+                <input name="mail_username" type="text" class="sa-form-input"
+                       value="{{ current_settings.mail_username }}" placeholder="yourmail@gmail.com">
+            </div>
+        </div>
+        <div class="sa-form-group">
+            <label class="sa-form-label">SMTP Password <span style="font-weight:400;color:var(--sa-muted);">(leave blank to keep current)</span></label>
+            <input name="mail_password" type="password" class="sa-form-input" placeholder="••••••••">
+        </div>
+    </div>
+
+    <!-- Integrations -->
+    <div class="sa-card" style="margin-bottom:24px;">
+        <div class="sa-card-title"><i class="fab fa-telegram"></i> Integrations</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="sa-form-group">
+                <label class="sa-form-label">Telegram Bot Token <span style="font-weight:400;color:var(--sa-muted);">(leave blank to keep current)</span></label>
+                <input name="telegram_bot_token" type="password" class="sa-form-input" placeholder="••••••••">
+            </div>
+            <div class="sa-form-group">
+                <label class="sa-form-label">Telegram Chat ID (Group/Channel or User ID)</label>
+                <input name="telegram_chat_id" type="text" class="sa-form-input"
+                       value="{{ current_settings.telegram_chat_id }}" placeholder="-100123456789 or 123456789">
+            </div>
+        </div>
+    </div>
+
+    <button type="submit" class="sa-btn sa-btn-primary" style="padding:12px 32px;">
+        <i class="fas fa-save"></i> Save All Settings
+    </button>
+</form>
+{% endblock %}

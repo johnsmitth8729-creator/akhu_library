@@ -1,0 +1,131 @@
+{% extends "layouts/base.html" %}
+{% block title %}Quiz — {{ competition.title }}{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/competition.css') }}">
+{% endblock %}
+
+{% block content %}
+<div
+    class="secure-quiz-page"
+    id="secureQuizRoot"
+    data-attempt-id="{{ attempt.id }}"
+    data-violation-url="{{ url_for('competitions.report_violation', attempt_id=attempt.id) }}"
+    data-csrf="{{ csrf_token() }}"
+    data-fullscreen="{{ 'true' if competition.require_fullscreen else 'false' }}"
+    data-track-focus="{{ 'true' if competition.track_focus_loss else 'false' }}"
+    data-disable-copy="{{ 'true' if competition.disable_copy else 'false' }}"
+    data-disable-print="{{ 'true' if competition.disable_print else 'false' }}"
+    data-time-limit="{{ competition.time_limit_minutes or 0 }}"
+    data-autosave-url="{{ url_for('competitions.autosave_quiz', attempt_id=attempt.id) }}"
+>
+    {% if competition.enable_watermark %}
+    <div class="secure-quiz-watermark" aria-hidden="true">
+        {% for i in range(24) %}
+        <span>AKHU Library · {{ watermark.name }} · {{ watermark.username }} · {{ watermark.group }} · {{ watermark.time }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="quiz-container">
+        <!-- Sticky/Top Progress Dashboard -->
+        <div class="quiz-progress-section">
+            <div class="quiz-meta-row">
+                <div>
+                    <h1 style="color: #0f172a; font-size: 1.25rem; font-weight: 700; margin: 0 0 0.25rem;">{{ competition.title }}</h1>
+                    <span class="quiz-progress-text" id="progressText">Question 1 of {{ questions|length }}</span>
+                </div>
+                
+                <div class="d-flex align-items-center gap-3">
+                    <span class="save-indicator" id="saveIndicator">
+                        <i class="fas fa-circle-check"></i> Answers saved
+                    </span>
+                    
+                    {% if competition.time_limit_minutes %}
+                    <span class="quiz-timer-pill" id="timerContainer">
+                        <i class="fas fa-clock"></i> <span id="quizTimer">--:--</span>
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Visual Progress Bar -->
+            <div class="quiz-bar-container">
+                <div class="quiz-bar-fill" id="progressBarFill"></div>
+            </div>
+
+            <!-- Question Circle Buttons Navigation -->
+            <div class="quiz-nav-grid" id="questionNavGrid">
+                {% for item in questions %}
+                <button type="button" class="quiz-nav-dot" data-target-idx="{{ loop.index0 }}">
+                    {{ loop.index }}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Question Form -->
+        <form method="post" action="{{ url_for('competitions.submit_quiz', attempt_id=attempt.id) }}" id="quizForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            {% for item in questions %}
+            <div class="question-step" data-step-idx="{{ loop.index0 }}">
+                <div class="quiz-question-card">
+                    <h3 style="font-size: 1.1rem; font-weight: 600; color: #0f172a; margin-bottom: 1.25rem;">
+                        {{ loop.index }}. {{ item.question.question_text }}
+                    </h3>
+                    
+                    {% set qtype = item.question.question_type %}
+                    <div class="options-container" data-question-id="{{ item.question.id }}">
+                        {% for opt in item.options %}
+                        <label class="quiz-option-label">
+                            {% if qtype in ['multiple', 'multiple_choice'] %}
+                            <input type="checkbox" name="q_{{ item.question.id }}" value="{{ opt.id }}" data-opt-id="{{ opt.id }}">
+                            {% else %}
+                            <input type="radio" name="q_{{ item.question.id }}" value="{{ opt.id }}" data-opt-id="{{ opt.id }}" required>
+                            {% endif %}
+                            <span class="quiz-option-text">{{ opt.option_text }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Bottom Navigation Bar -->
+            <div class="quiz-buttons-row">
+                <button type="button" class="btn btn-ghost btn-quiz-nav" id="btnPrev">
+                    <i class="fas fa-arrow-left"></i> Previous
+                </button>
+                
+                <button type="button" class="btn btn-primary btn-quiz-nav" id="btnNext">
+                    Next <i class="fas fa-arrow-right"></i>
+                </button>
+                
+                <button type="button" class="btn btn-gold btn-quiz-nav" id="btnSubmit" style="display: none;">
+                    Submit Quiz <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Submit Confirmation Modal -->
+<div class="confirm-modal-overlay" id="confirmModal">
+    <div class="confirm-modal-card">
+        <div class="confirm-modal-icon">
+            <i class="fas fa-circle-question"></i>
+        </div>
+        <h3>Submit your quiz?</h3>
+        <p>You have answered <span id="answeredCount">0</span> of {{ questions|length }} questions. Once submitted, you cannot change your answers.</p>
+        
+        <div class="confirm-modal-actions">
+            <button type="button" class="btn btn-ghost btn-sm" id="btnCancelSubmit">Go back</button>
+            <button type="button" class="btn btn-primary btn-sm" id="btnConfirmSubmit">Yes, submit answers</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/secure_quiz.js') }}"></script>
+{% endblock %}

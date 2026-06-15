@@ -1,0 +1,49 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Import Result | Librarian Panel{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/librarian.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="librarian-area">
+    <div class="container">
+        <div class="page-header">
+            <h1>Import Complete</h1>
+            <p class="text-muted">Faculty: <strong>{{ report.faculty_name }}</strong></p>
+        </div>
+
+        <div class="stats-grid mb-4" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));">
+            <div class="stat-card"><div class="stat-header"><span>Processed</span></div><strong>{{ processed }}</strong></div>
+            <div class="stat-card"><div class="stat-header"><span>Created</span></div><strong class="text-success">{{ created }}</strong></div>
+            <div class="stat-card"><div class="stat-header"><span>Skipped</span></div><strong class="text-danger">{{ skipped }}</strong></div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mb-4">
+            <a href="{{ url_for('librarian.import_users_report', token=token) }}" class="btn btn-gold">
+                <i class="fas fa-download me-2"></i> Download import_report.xlsx
+            </a>
+            <a href="{{ back_url }}" class="btn btn-primary">View Users</a>
+            <a href="{{ url_for('librarian.import_users', source=source) }}" class="btn btn-ghost">Import Another File</a>
+        </div>
+
+        <div class="data-card">
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead><tr><th>Row</th><th>Name</th><th>Reason</th></tr></thead>
+                    <tbody>
+                        {% for item in report.rows %}
+                        <tr>
+                            <td>{{ item.row }}</td>
+                            <td>{{ item.name }}</td>
+                            <td>{{ item.reason }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

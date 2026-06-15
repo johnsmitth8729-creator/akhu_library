@@ -1,0 +1,175 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}{% if book %}Edit Physical Book{% else %}Add Physical Book{% endif %} | Librarian Panel{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/librarian.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="librarian-area">
+    <div class="container">
+        <div class="lm-book-form-shell">
+
+            <!-- HEADER -->
+            <div class="lm-book-form-header">
+                <div class="lm-book-form-title">
+                    <div class="lm-book-form-icon lm-book-form-icon-physical">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <div>
+                        <h1>{% if book %}Edit Physical Book{% else %}Add Physical Book{% endif %}</h1>
+                        <p class="text-muted">Add or update physical assets, stock counts, shelf locations, and book metadata.</p>
+                    </div>
+                </div>
+                <a href="{{ url_for('librarian.manage_books') }}" class="btn btn-ghost lm-book-form-cancel">
+                    <i class="fas fa-times"></i>
+                    <span>Cancel</span>
+                </a>
+            </div>
+
+            <!-- FORM CARD -->
+            <div class="data-card lm-book-form-card">
+                <form method="POST" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+
+                    <!-- Error panel -->
+                    {% if form.errors %}
+                    <div class="form-error-panel">
+                        <strong><i class="fas fa-exclamation-circle me-1"></i> Please correct the highlighted errors:</strong>
+                        <ul>
+                            {% for field_name, errors in form.errors.items() %}
+                                {% for error in errors %}
+                                <li>{{ form[field_name].label.text if field_name in form else field_name }}: {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- ===== SECTION: General Info ===== -->
+                    <div class="form-section-title">
+                        <i class="fas fa-info-circle text-primary"></i> General Information
+                    </div>
+
+                    <div class="lm-bf-grid lm-bf-grid-8-4">
+                        <div class="form-group">
+                            <label class="lm-bf-label">{{ form.title.label }}</label>
+                            {{ form.title(class="form-input-full lm-bf-input", placeholder="e.g. Introduction to Algorithms") }}
+                        </div>
+                        <div class="form-group">
+                            <label class="lm-bf-label">{{ form.isbn.label }}</label>
+                            {{ form.isbn(class="form-input-full lm-bf-input", placeholder="e.g. 978-0262033848") }}
+                        </div>
+                    </div>
+
+                    <!-- Author & Category -->
+                    <div class="lm-bf-grid lm-bf-grid-2col">
+                        <div class="form-group">
+                            <label class="lm-bf-label">Select Registered Author</label>
+                            {{ form.author_id(class="form-input-full lm-bf-input") }}
+                            <div class="mt-2">
+                                <label class="lm-bf-sublabel">Or enter a new writer name:</label>
+                                {{ form.new_author(class="form-input-full lm-bf-input", placeholder="Type new writer fullname...") }}
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="lm-bf-label">Select Catalog Category</label>
+                            {{ form.category_id(class="form-input-full lm-bf-input") }}
+                            <div class="mt-2">
+                                <label class="lm-bf-sublabel">Or enter a new catalog genre:</label>
+                                {{ form.new_category(class="form-input-full lm-bf-input", placeholder="Type new catalog category...") }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== SECTION: Inventory ===== -->
+                    <div class="form-section-title">
+                        <i class="fas fa-boxes text-primary"></i> Inventory & Cataloging
+                    </div>
+
+                    <div class="lm-bf-grid lm-bf-grid-2col">
+                        <div class="form-group">
+                            <label class="lm-bf-label">{{ form.nn_numbers.label }}</label>
+                            {{ form.nn_numbers(class="form-input-full textarea-custom lm-bf-input", placeholder="NN-001\nNN-002\nNN-003", rows="5") }}
+                            <small class="text-muted mt-1 d-block">Enter one NN Number per physical copy per line. The quantity will be computed automatically.</small>
+                        </div>
+                        <div class="lm-bf-stack">
+                            <div class="form-group">
+                                <label class="lm-bf-label">{{ form.language.label }}</label>
+                                {{ form.language(class="form-input-full lm-bf-input", placeholder="Uzbek/English") }}
+                            </div>
+                            <div class="form-group">
+                                <label class="lm-bf-label">{{ form.published_year.label }}</label>
+                                {{ form.published_year(class="form-input-full lm-bf-input", placeholder="2024") }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== SECTION: Storage Location ===== -->
+                    <div class="form-section-title">
+                        <i class="fas fa-map-marker-alt text-primary"></i> Storage Location
+                    </div>
+
+                    <div class="lm-bf-grid lm-bf-grid-2col">
+                        <div class="form-group">
+                            <label class="lm-bf-label">{{ form.library_location.label }}</label>
+                            {{ form.library_location(class="form-input-full lm-bf-input", placeholder="e.g. Main Library Hall A") }}
+                        </div>
+                        <div class="form-group">
+                            <label class="lm-bf-label">{{ form.shelf_code.label }}</label>
+                            {{ form.shelf_code(class="form-input-full lm-bf-input", placeholder="e.g. A-12, Section 3") }}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="lm-bf-label">{{ form.description.label }}</label>
+                        {{ form.description(class="form-input-full textarea-custom lm-bf-input", placeholder="Provide a brief overview of the book's contents, index topics, or shelf conditions...") }}
+                    </div>
+
+                    <!-- ===== SECTION: Cover Image ===== -->
+                    <div class="form-section-title">
+                        <i class="fas fa-image text-primary"></i> Cover Showcase
+                    </div>
+
+                    <div class="form-group">
+                        {% if book and book.cover_image %}
+                        <div class="current-file-note">
+                            <i class="fas fa-check-circle"></i>
+                            Current cover image is saved. Upload a new image only to replace it.
+                        </div>
+                        {% endif %}
+                        <div class="upload-zone lm-bf-upload-zone" onclick="document.getElementById('cover_image').click()">
+                            <i class="fas fa-camera upload-icon"></i>
+                            <span class="upload-text-main" id="cover-text">Click or tap to upload cover photo</span>
+                            <span class="text-muted small">WEBP, JPG or PNG (Ratio 3:4 recommended)</span>
+                        </div>
+                        {{ form.cover_image(id="cover_image", class="d-none") }}
+                    </div>
+
+                    <!-- ===== Actions ===== -->
+                    <div class="lm-bf-actions">
+                        <a href="{{ url_for('librarian.manage_books') }}" class="btn btn-ghost lm-bf-action-cancel">Cancel</a>
+                        <button type="submit" class="btn btn-primary lm-bf-action-save"
+                            onclick="return confirm('Are you sure you want to save this book data?')">
+                            <i class="fas fa-save me-2"></i> Save Asset
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById("cover_image").onchange = function() {
+        if(this.files.length > 0) {
+            document.getElementById("cover-text").innerText = "✓ " + this.files[0].name;
+            document.getElementById("cover-text").style.color = "#16a34a";
+        }
+    };
+</script>
+{% endblock %}

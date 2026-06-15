@@ -1,0 +1,156 @@
+{% extends "layouts/base.html" %}
+{% block title %}Results — {{ competition.title }}{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/competition.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="results-page">
+    <!-- Header -->
+    <div class="results-header">
+        <div>
+            <h1><i class="fas fa-chart-column me-2"></i>{{ competition.title }}</h1>
+            <p>Participant results, rankings and security log</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('competitions.leaderboard', competition_id=competition.id) }}"
+               class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3);">
+                <i class="fas fa-crown me-1"></i> Leaderboard
+            </a>
+            <a href="{{ url_for('competitions.export_results', competition_id=competition.id) }}"
+               class="btn btn-gold">
+                <i class="fas fa-file-excel me-1"></i> Export Excel
+            </a>
+            <a href="{{ url_for('competitions.export_results', competition_id=competition.id, format='csv') }}"
+               class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3);">
+                <i class="fas fa-file-csv me-1"></i> CSV
+            </a>
+        </div>
+    </div>
+
+    <!-- KPI chips -->
+    {% set completed = attempts|selectattr('status', 'equalto', 'completed')|list %}
+    {% set avg = (completed|map(attribute='percentage')|sum / completed|length)|round(1) if completed else 0 %}
+    {% set viol_total = violations|length %}
+    <div class="results-kpi">
+        <div class="res-kpi-chip">
+            <div class="res-kpi-icon blue"><i class="fas fa-users"></i></div>
+            <div>
+                <div class="res-kpi-val">{{ attempts|length }}</div>
+                <div class="res-kpi-label">Total Attempts</div>
+            </div>
+        </div>
+        <div class="res-kpi-chip">
+            <div class="res-kpi-icon green"><i class="fas fa-circle-check"></i></div>
+            <div>
+                <div class="res-kpi-val">{{ completed|length }}</div>
+                <div class="res-kpi-label">Completed</div>
+            </div>
+        </div>
+        <div class="res-kpi-chip">
+            <div class="res-kpi-icon gold"><i class="fas fa-chart-pie"></i></div>
+            <div>
+                <div class="res-kpi-val">{{ avg }}%</div>
+                <div class="res-kpi-label">Avg Score</div>
+            </div>
+        </div>
+        <div class="res-kpi-chip">
+            <div class="res-kpi-icon red"><i class="fas fa-triangle-exclamation"></i></div>
+            <div>
+                <div class="res-kpi-val">{{ viol_total }}</div>
+                <div class="res-kpi-label">Violations</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rankings Panel -->
+    <div class="res-panel">
+        <div class="res-panel-header">
+            <h2><i class="fas fa-crown me-2" style="color:#f59e0b;"></i>Rankings</h2>
+            <span class="text-sm text-slate-400">{{ attempts|length }} participant{{ 's' if attempts|length != 1 }}</span>
+        </div>
+        <div class="table-responsive">
+            <table class="res-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Participant</th>
+                        <th>Score</th>
+                        <th>Time</th>
+                        <th>Medal</th>
+                        <th>Violations</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for att in attempts %}
+                    {% set vc = att.violation_count or 0 %}
+                    <tr>
+                        <td>
+                            <span class="rank-badge {% if att.rank_position==1 %}gold{% elif att.rank_position==2 %}silver{% elif att.rank_position==3 %}bronze{% endif %}">
+                                {{ att.rank_position or '—' }}
+                            </span>
+                        </td>
+                        <td>
+                            <strong>{{ att.user.fullname if att.user else '—' }}</strong>
+                            {% if att.user %}<div class="small text-slate-400">{{ att.user.username }}</div>{% endif %}
+                        </td>
+                        <td>
+                            <div class="score-bar-wrap">
+                                <div class="score-mini-bar">
+                                    <div class="score-mini-fill" style="width:{{ att.percentage or 0 }}%;"></div>
+                                </div>
+                                <span class="score-pct">{{ att.percentage or 0 }}%</span>
+                            </div>
+                            <div class="small text-slate-400">{{ att.score or 0 }} pts</div>
+                        </td>
+                        <td>{{ att.completion_seconds or '—' }}{% if att.completion_seconds %}s{% endif %}</td>
+                        <td>
+                            {% if att.medal %}
+                            <span class="violation-badge {{ att.medal }}">
+                                <i class="fas fa-medal"></i> {{ att.medal|capitalize }}
+                            </span>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td>
+                            <span class="violation-badge {% if vc==0 %}none{% elif vc<3 %}some{% else %}many{% endif %}">
+                                {% if vc == 0 %}<i class="fas fa-shield-check"></i> None
+                                {% else %}<i class="fas fa-triangle-exclamation"></i> {{ vc }}{% endif %}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr class="empty-row"><td colspan="6"><i class="fas fa-hourglass-half me-2"></i>No completed attempts yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Security Incidents Panel -->
+    <div class="res-panel">
+        <div class="res-panel-header">
+            <h2><i class="fas fa-shield-halved me-2" style="color:#ef4444;"></i>Security Incidents</h2>
+            <span class="text-sm text-slate-400">{{ violations|length }} event{{ 's' if violations|length != 1 }}</span>
+        </div>
+        <div class="table-responsive">
+            <table class="res-table">
+                <thead>
+                    <tr><th>Participant</th><th>Event Type</th><th>Details</th><th>Time</th></tr>
+                </thead>
+                <tbody>
+                    {% for v in violations %}
+                    <tr>
+                        <td><strong>{{ v.attempt.user.fullname if v.attempt and v.attempt.user else '—' }}</strong></td>
+                        <td><span class="event-type-chip">{{ v.event_type|replace('_',' ')|title }}</span></td>
+                        <td>{{ v.details or '—' }}</td>
+                        <td class="text-slate-400">{{ v.created_at.strftime('%d %b %H:%M') }}</td>
+                    </tr>
+                    {% else %}
+                    <tr class="empty-row"><td colspan="4"><i class="fas fa-shield-check me-2" style="color:#10b981;"></i>No security violations recorded.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Import Preview | Librarian Panel{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/librarian.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="librarian-area">
+    <div class="container">
+        <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h1>Import Preview</h1>
+                <p class="text-muted">Faculty: <strong>{{ preview.faculty_name }}</strong> — review before confirming.</p>
+            </div>
+            <a href="{{ back_url }}" class="btn btn-ghost">Cancel</a>
+        </div>
+
+        <div class="stats-grid mb-4" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));">
+            <div class="stat-card"><div class="stat-header"><span>Total Rows</span></div><strong>{{ preview.total_rows }}</strong></div>
+            <div class="stat-card"><div class="stat-header"><span>Valid</span></div><strong class="text-success">{{ preview.valid_count }}</strong></div>
+            <div class="stat-card"><div class="stat-header"><span>Errors</span></div><strong class="text-danger">{{ preview.error_count }}</strong></div>
+        </div>
+
+        <div class="data-card mb-4">
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Group</th>
+                            <th>Generated Username</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in preview.rows %}
+                        <tr>
+                            <td>{{ row.row_number }}</td>
+                            <td>{{ row.fullname }}</td>
+                            <td>{{ row.email or '—' }}</td>
+                            <td>{{ row.phone }}</td>
+                            <td>{{ row.group }}</td>
+                            <td><code>{{ row.username or '—' }}</code></td>
+                            <td>
+                                {% if row.status == 'valid' %}
+                                <span class="badge-custom physical">{{ row.message }}</span>
+                                {% else %}
+                                <span class="badge-custom" style="background:#fee2e2;color:#b91c1c;">{{ row.message }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {% if preview.valid_count > 0 %}
+        <form method="post" action="{{ url_for('librarian.import_users_confirm') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="token" value="{{ token }}">
+            <input type="hidden" name="source" value="{{ source }}">
+            <p class="text-muted mb-3">All valid users will receive the temporary password: <code>{{ default_password }}</code></p>
+            <button type="submit" class="btn btn-primary btn-lg fw-bold px-5" style="border-radius: 12px;" onclick="return confirm('Create {{ preview.valid_count }} user accounts?')">
+                <i class="fas fa-users me-2"></i> Import {{ preview.valid_count }} Users
+            </button>
+        </form>
+        {% else %}
+        <p class="text-danger fw-bold">No valid rows to import. Fix the Excel file and upload again.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

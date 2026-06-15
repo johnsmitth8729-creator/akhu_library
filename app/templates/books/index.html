@@ -1,0 +1,189 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+Library | Al-Khwarizmi Smart Library
+{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/book.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<section class="library-shell-pro">
+
+    <div class="library-hero-pro">
+        <span class="hero-badge">
+            Al-Khwarizmi Smart Library
+        </span>
+
+        <h1>
+            Explore Our Modern Library Collection
+        </h1>
+
+        <p>
+            Discover physical university books and digital PDF resources designed
+            for students, researchers, and future innovators.
+        </p>
+    </div>
+
+    <div class="library-filters-pro">
+        <form
+            method="GET"
+            action="{{ url_for('books.index') }}"
+        >
+            <div class="library-filter-group">
+                <label>
+                    Search Books
+                </label>
+
+                <input
+                    type="text"
+                    name="q"
+                    value="{{ search }}"
+                    placeholder="Search by title or ISBN..."
+                >
+            </div>
+
+            <div class="library-filter-group">
+                <label>
+                    Category
+                </label>
+
+                <select name="category">
+                    <option value="">
+                        All Categories
+                    </option>
+
+                    {% for c in categories %}
+                        <option
+                            value="{{ c.id }}"
+                            {% if current_category == c.id %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ c.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="library-filter-group">
+                <label>
+                    Book Type
+                </label>
+
+                <select name="type">
+                    <option value="">
+                        All Types
+                    </option>
+
+                    <option
+                        value="physical"
+                        {% if book_type == "physical" %}
+                            selected
+                        {% endif %}
+                    >
+                        Physical Books
+                    </option>
+
+                    <option
+                        value="digital"
+                        {% if book_type == "digital" %}
+                            selected
+                        {% endif %}
+                    >
+                        Digital PDF Books
+                    </option>
+                </select>
+            </div>
+
+            <button
+                type="submit"
+                class="btn btn-primary btn-lg"
+            >
+                <i class="fas fa-search"></i>
+                Search Library
+            </button>
+        </form>
+    </div>
+
+    <div class="library-results-top">
+        <div>
+            <h2>
+                Library Books
+            </h2>
+
+            <p>
+                {{ pagination.total }} books found
+            </p>
+        </div>
+
+        <a href="{{ url_for('books.index') }}" class="btn btn-ghost">
+            Clear Filters
+        </a>
+    </div>
+
+    {% if pagination.items %}
+        <div class="library-grid-pro">
+            {% for b in pagination.items %}
+                {% include 'books/_card.html' %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="library-empty-pro">
+            <i class="fas fa-book-open"></i>
+
+            <h3>
+                No Books Found
+            </h3>
+
+            <p>
+                Try changing your search keywords or filters.
+            </p>
+
+            <a href="{{ url_for('books.index') }}" class="btn btn-primary">
+                Reset Search
+            </a>
+        </div>
+    {% endif %}
+
+    {% if pagination.pages > 1 %}
+        <div class="library-pagination-pro">
+            {% if pagination.has_prev %}
+                <a
+                    href="{{ url_for(
+                        'books.index',
+                        page=pagination.prev_num,
+                        q=search,
+                        category=current_category,
+                        type=book_type
+                    ) }}"
+                >
+                    ← Previous
+                </a>
+            {% endif %}
+
+            <span>
+                Page {{ pagination.page }} of {{ pagination.pages }}
+            </span>
+
+            {% if pagination.has_next %}
+                <a
+                    href="{{ url_for(
+                        'books.index',
+                        page=pagination.next_num,
+                        q=search,
+                        category=current_category,
+                        type=book_type
+                    ) }}"
+                >
+                    Next →
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+
+</section>
+
+{% endblock %}

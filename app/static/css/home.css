@@ -1,0 +1,778 @@
+/* ============================================================
+   home.css — Smart Library Flagship Home Page Stylesheet
+   Al-Khwarizmi Smart Library Platform
+   ============================================================ */
+
+/* ============================================================
+   1. HERO CONTAINER & GENERAL BACKGROUNDS
+   ============================================================ */
+.home-hero {
+    position: relative;
+    min-height: calc(100vh - 92px);
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-top: -24px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 100px 48px;
+    color: #ffffff;
+    background-color: #082544;
+    background:
+        linear-gradient(
+            90deg,
+            rgba(4, 14, 24, 0.30) 0%,
+            rgba(4, 14, 24, 0.15) 50%,
+            rgba(4, 14, 24, 0.30) 100%
+        ),
+        url("../images/home_jpg.png") center center / cover no-repeat;
+}
+
+.home-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background:
+        radial-gradient(
+            circle at 50% 44%,
+            rgba(255, 255, 255, 0.08),
+            transparent 45%
+        ),
+        linear-gradient(
+            180deg,
+            rgba(0, 0, 0, 0.06) 0%,
+            rgba(0, 0, 0, 0.16) 100%
+        );
+}
+
+.home-hero-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background:
+        linear-gradient(
+            180deg,
+            rgba(0, 0, 0, 0.02) 0%,
+            rgba(0, 0, 0, 0.06) 38%,
+            rgba(8, 37, 68, 0.22) 100%
+        );
+}
+
+/* ============================================================
+   2. HERO CONTENT & TYPOGRAPHY CLAMPS
+   ============================================================ */
+.home-hero-content {
+    position: relative;
+    z-index: 3;
+    width: min(960px, 100%);
+    text-align: center;
+    margin: 26px auto 0;
+}
+
+.home-hero-content h1 {
+    margin: 0;
+    color: #ffffff;
+    font-family: "Poppins", "Inter", sans-serif;
+    font-size: clamp(2.2rem, 6vw, 4.2rem);
+    line-height: 1.05;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    text-shadow: 0 10px 25px rgba(0, 0, 0, 0.75), 0 2px 4px rgba(0, 0, 0, 0.9);
+}
+
+.home-hero-content h1::before {
+    content: "Al-Khwarizmi Smart Library";
+    display: block;
+    width: fit-content;
+    margin: 0 auto 18px;
+    padding: 8px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #f8e7a6;
+    font: 800 13px/1 "Inter", sans-serif;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.home-hero-content > p {
+    width: min(620px, 100%);
+    margin: 26px auto 34px;
+    color: rgba(255, 255, 255, 0.96);
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    line-height: 1.5;
+    font-weight: 600;
+    text-shadow: 0 8px 16px rgba(0, 0, 0, 0.75), 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+/* ============================================================
+   3. REFINED HORIZONTAL SEARCH BAR
+   ============================================================ */
+.home-hero-search {
+    width: min(720px, 100%);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding: 8px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
+}
+
+.home-hero-search input {
+    width: 100%;
+    min-height: 58px;
+    border: 0;
+    outline: 0;
+    border-radius: 14px;
+    padding: 0 24px;
+    color: #102033;
+    background: rgba(255, 255, 255, 0.96);
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.home-hero-search input::placeholder {
+    color: #8b94a3;
+}
+
+.home-hero-search button {
+    min-height: 58px;
+    min-width: 136px;
+    border: 0;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: #111827;
+    background: linear-gradient(135deg, var(--gold), #b88916);
+    box-shadow: 0 18px 38px rgba(212, 175, 55, 0.28);
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.home-hero-search button:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(135deg, #e7c95d, var(--gold));
+    box-shadow: 0 22px 46px rgba(212, 175, 55, 0.35);
+}
+
+.home-hero-search button i {
+    font-size: 16px;
+}
+
+/* ============================================================
+   4. PREMIUM STATISTICS CARDS GRID
+   ============================================================ */
+.home-hero-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 48px;
+    width: 100%;
+}
+
+.home-hero-stat {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 24px;
+    border-radius: 24px;
+    background: rgba(8, 37, 68, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), 
+                box-shadow 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), 
+                background-color 0.4s cubic-bezier(0.165, 0.84, 0.44, 1),
+                border-color 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    text-align: left;
+    animation: floatCard 6s ease-in-out infinite;
+}
+
+.home-hero-stats > *:nth-child(1) {
+    animation-delay: 0s;
+}
+.home-hero-stats > *:nth-child(2) {
+    animation-delay: 1.5s;
+}
+.home-hero-stats > *:nth-child(3) {
+    animation-delay: 3s;
+}
+
+.home-hero-stat:hover {
+    animation-play-state: paused;
+    transform: translateY(-8px);
+    background: rgba(8, 37, 68, 0.60);
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+}
+
+.home-hero-stat.stat-clickable {
+    cursor: pointer;
+    text-decoration: none;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25), 0 0 15px rgba(42, 140, 255, 0.12);
+}
+
+.home-hero-stat.stat-clickable:hover {
+    animation-play-state: paused;
+    transform: translateY(-10px) scale(1.03);
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(42, 140, 255, 0.6);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45), 0 0 25px rgba(42, 140, 255, 0.3);
+}
+
+.home-hero-stat strong {
+    display: block;
+    color: #ffffff;
+    font-size: 32px;
+    line-height: 1.1;
+    font-weight: 800;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.home-hero-stat span {
+    display: block;
+    margin-top: 4px;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.stat-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+    display: grid;
+    place-items: center;
+    color: #ffffff;
+    font-size: 20px;
+    flex-shrink: 0;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s ease;
+}
+
+.home-hero-stat:hover .stat-icon {
+    transform: scale(1.1) rotate(5deg);
+}
+
+.stat-icon.blue {
+    background: linear-gradient(135deg, #4da3ff, #0056cc);
+}
+
+.stat-icon.gold {
+    background: linear-gradient(135deg, #ffe27a, #c68c00);
+}
+
+.stat-icon.green {
+    background: linear-gradient(135deg, #46e89f, #008f53);
+}
+
+/* ============================================================
+   5. HERO QUOTE SECTION
+   ============================================================ */
+.home-hero-quote {
+    width: min(720px, 100%);
+    margin: 76px auto 0;
+    min-height: 120px;
+    border-radius: 20px;
+    display: grid;
+    grid-template-columns: 4px 1fr auto;
+    align-items: center;
+    gap: 28px;
+    padding: 24px 32px 24px 44px;
+    text-align: left;
+    background: rgba(8, 37, 68, 0.68);
+    box-shadow:
+        0 26px 70px rgba(0, 0, 0, 0.30),
+        inset 0 1px 0 rgba(255, 255, 255, 0.10);
+    backdrop-filter: blur(14px);
+}
+
+.quote-line {
+    width: 4px;
+    height: 72px;
+    border-radius: 4px;
+    background: #f5c518;
+}
+
+.home-hero-quote p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.96);
+    font-size: clamp(0.95rem, 1.8vw, 1.1rem);
+    line-height: 1.42;
+    font-weight: 500;
+}
+
+.home-hero-quote span {
+    display: inline-block;
+    margin-top: 9px;
+    color: #f5c518;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.quote-icon {
+    justify-self: end;
+    color: rgba(255, 255, 255, 0.16);
+    font-size: 78px;
+}
+
+/* ============================================================
+   6. SECTIONS & GENERAL LAYOUTS
+   ============================================================ */
+.modern-section {
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    padding: 84px 0;
+    background: #f4f7fb;
+}
+
+.modern-section:nth-of-type(even) {
+    background: #ffffff;
+}
+
+.section-top {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.section-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    color: #075bdc;
+    background: rgba(7, 91, 220, 0.10);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.section-title {
+    margin: 12px 0 0;
+    color: var(--navy);
+    font-size: clamp(1.6rem, 3vw, 2.45rem);
+    line-height: 1.15;
+    font-weight: 800;
+}
+
+.section-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    color: #075bdc;
+    font-weight: 800;
+    text-decoration: none;
+    transition: transform 0.2s ease;
+}
+
+.section-link:hover {
+    transform: translateX(3px);
+}
+
+/* ============================================================
+   7. EXPLORE CATEGORIES GRID
+   ============================================================ */
+.modern-categories {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.modern-category-card {
+    min-height: 134px;
+    border-radius: 20px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-start;
+    color: var(--navy);
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    box-shadow: var(--akhu-shadow, 0 20px 55px rgba(8, 37, 68, 0.10));
+    text-decoration: none;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.modern-category-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 24px 48px rgba(8, 37, 68, 0.16);
+}
+
+.category-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    color: #ffffff;
+    background: linear-gradient(135deg, var(--royal), var(--navy));
+    margin-bottom: 12px;
+}
+
+.modern-category-card span {
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--navy);
+}
+
+/* ============================================================
+   8. BOOKS GRID LAYOUT
+   ============================================================ */
+.modern-books-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 28px;
+    padding-bottom: 6px;
+}
+
+/* Guarantee equal height layout matching for book cards on home page */
+.modern-books-grid .book-card {
+    height: 100%;
+}
+
+.empty-state {
+    min-height: 180px;
+    border-radius: 20px;
+    grid-column: 1 / -1;
+    display: grid;
+    place-items: center;
+    gap: 10px;
+    color: #637083;
+    background: #ffffff;
+    border: 1px dashed rgba(10, 35, 64, 0.18);
+}
+
+.empty-state i {
+    color: #075bdc;
+    font-size: 32px;
+}
+
+.empty-state p {
+    margin: 0;
+    font-weight: 700;
+}
+
+/* ============================================================
+   9. RESPONSIVE BREAKPOINTS (MEDIA QUERIES)
+   ============================================================ */
+@media (max-width: 1080px) {
+    .home-hero {
+        min-height: auto;
+        padding: 110px 24px 70px;
+    }
+
+    .home-hero-content {
+        margin: 0 auto;
+    }
+
+    .modern-categories {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    
+    .modern-books-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+    }
+}
+
+@media (max-width: 992px) {
+    .home-hero-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .home-hero-stat:last-child {
+        grid-column: span 2;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 860px) {
+    .home-hero {
+        margin-top: -28px;
+        background-size: auto, cover;
+    }
+
+    .home-hero-search {
+        grid-template-columns: 1fr;
+        background: transparent;
+        border: none;
+        backdrop-filter: none;
+        padding: 0;
+        box-shadow: none;
+        gap: 12px;
+    }
+    
+    .home-hero-search input {
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .home-hero-search button {
+        width: 100%;
+    }
+
+    .modern-section {
+        padding: 58px 0;
+    }
+}
+
+/* Comprehensive Mobile Viewport Optimizations (< 768px) */
+@media (max-width: 768px) {
+    /* Sticky Header Spacing Fix to prevent content overlap */
+    .home-hero {
+        padding-top: 124px; /* Shifting hero content below mobile sticky header */
+        margin-top: -28px;
+    }
+
+    /* Compact modern sections and headers */
+    .modern-section {
+        padding: 34px 0;
+    }
+    
+    .section-top {
+        margin-bottom: 16px;
+        flex-direction: row; /* Keep View All inline */
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+    
+    .section-badge {
+        font-size: 11px;
+        padding: 4px 10px;
+    }
+    
+    .section-title {
+        font-size: 20px;
+        margin-top: 4px;
+    }
+    
+    .section-link {
+        font-size: 13px;
+        flex-shrink: 0;
+    }
+
+    /* Compact Book Cards Layout (2 columns) */
+    .modern-books-grid {
+        grid-template-columns: repeat(2, 1fr) !important; /* Forces 2 columns */
+        gap: 12px !important;
+    }
+    
+    .modern-books-grid .book-card {
+        border-radius: 16px;
+    }
+    
+    .modern-books-grid .book-card .cover {
+        aspect-ratio: 3 / 4;
+        max-height: 156px; /* Compress vertical height significantly */
+    }
+    
+    .modern-books-grid .book-card .cover-placeholder {
+        font-size: 32px;
+    }
+    
+    .modern-books-grid .book-card .book-meta {
+        padding: 10px;
+    }
+    
+    .modern-books-grid .book-card .book-meta h3 {
+        font-size: 13px;
+        line-height: 1.35;
+        min-height: 35px; /* Maximum 2 lines height */
+        margin-bottom: 2px;
+        -webkit-line-clamp: 2;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        word-break: break-word;
+    }
+    
+    .modern-books-grid .book-card .book-meta p.muted {
+        font-size: 11px;
+        margin: 2px 0 6px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .modern-books-grid .book-card .row-between {
+        font-size: 11px;
+        gap: 4px;
+        margin-top: auto;
+    }
+    
+    .modern-books-grid .book-card .tag {
+        font-size: 10px;
+        padding: 2px 6px;
+        max-width: 70px;
+    }
+    
+    .modern-books-grid .book-card .book-card-meta {
+        display: none; /* Hide added date to save space */
+    }
+    
+    .modern-books-grid .book-card .book-card-footer {
+        margin-top: 6px;
+        padding-top: 6px;
+        gap: 4px;
+    }
+    
+    .modern-books-grid .book-card .availability-pill {
+        font-size: 9px;
+        padding: 2px 5px;
+    }
+    
+    .modern-books-grid .book-card .view-details {
+        font-size: 9px;
+    }
+
+    /* Category Cards (2 columns, centered, compact) */
+    .modern-categories {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px !important;
+    }
+    
+    .modern-category-card {
+        min-height: 96px;
+        padding: 12px;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        border-radius: 16px;
+    }
+    
+    .category-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+        margin: 0 auto 6px; /* Centered */
+    }
+    
+    .modern-category-card span {
+        font-size: 12px;
+        line-height: 1.2;
+    }
+
+    /* Compact Statistics Cards */
+    .home-hero-stats {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+        width: min(360px, 100%);
+        margin: 28px auto 0;
+    }
+    
+    .home-hero-stat {
+        padding: 12px 16px;
+        gap: 12px;
+        border-radius: 16px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    }
+    
+    .home-hero-stat:last-child {
+        grid-column: span 1 !important;
+        justify-content: flex-start !important;
+    }
+    
+    .home-hero-stat strong {
+        font-size: 20px;
+    }
+    
+    .home-hero-stat span {
+        font-size: 12px;
+        margin-top: 2px;
+    }
+    
+    .stat-icon {
+        width: 38px;
+        height: 38px;
+        font-size: 14px;
+        border-radius: 10px;
+    }
+
+    /* Quote Section */
+    .home-hero-quote {
+        margin-top: 32px;
+        padding: 14px 18px;
+        min-height: auto;
+        grid-template-columns: 4px 1fr;
+        gap: 14px;
+        border-radius: 16px;
+    }
+    
+    .quote-line {
+        height: 52px;
+    }
+    
+    .home-hero-quote p {
+        font-size: 13px;
+        line-height: 1.4;
+    }
+    
+    .home-hero-quote span {
+        font-size: 11px;
+        margin-top: 4px;
+    }
+}
+
+/* Particle system styles */
+.hero-particles {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.particle {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.35);
+    border-radius: 50%;
+    animation: floatParticle linear infinite;
+    pointer-events: none;
+}
+
+@keyframes floatParticle {
+    0% {
+        transform: translateY(100vh) scale(0.5);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.8;
+    }
+    90% {
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateY(-20vh) scale(1.2);
+        opacity: 0;
+    }
+}
+
+@keyframes floatCard {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-8px);
+    }
+}

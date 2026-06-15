@@ -1,0 +1,202 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}{% if book %}Edit Book{% else %}Add New Book{% endif %} | Librarian Panel{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/librarian.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="librarian-area">
+    <div class="container">
+        
+        <div class="form-container-lg">
+            <!-- Header -->
+            <div class="page-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h1>{% if book %}Edit Book{% else %}Add New Book{% endif %}</h1>
+                    <p class="text-muted">Carefully fill in the book details and upload necessary files.</p>
+                </div>
+                <a href="{{ url_for('librarian.manage_books') }}" class="btn btn-ghost">
+                    Cancel
+                </a>
+            </div>
+
+            <div class="data-card p-4 p-md-5">
+                <form method="POST" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+
+                    <!-- Section: Basic Info -->
+                    <div class="form-section-title">
+                        <i class="fas fa-info-circle text-primary"></i> Basic Information
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="form-group mb-4">
+                                <label class="fw-bold mb-2">{{ form.title.label }}</label>
+                                {{ form.title(class="form-input-full", placeholder="Enter book title...") }}
+                                {% for error in form.title.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group mb-4">
+                                <label class="fw-bold mb-2">{{ form.isbn.label }}</label>
+                                {{ form.isbn(class="form-input-full", placeholder="e.g. 978-3-16-148410-0") }}
+                                {% for error in form.isbn.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Author Selection -->
+                        <div class="col-md-6">
+                            <div class="form-group mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="fw-bold m-0">{{ form.author_id.label }}</label>
+                                    <label class="toggle-container">
+                                        {{ form.use_new_author(id="use_new_author") }}
+                                        <span>New Author</span>
+                                    </label>
+                                </div>
+                                
+                                <div id="author-select-box">
+                                    {{ form.author_id(class="form-input-full") }}
+                                </div>
+                                <div id="new-author-box" class="d-none">
+                                    {{ form.new_author(class="form-input-full", placeholder="Enter new author name...") }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Category Selection -->
+                        <div class="col-md-6">
+                            <div class="form-group mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="fw-bold m-0">{{ form.category_id.label }}</label>
+                                    <label class="toggle-container">
+                                        {{ form.use_new_category(id="use_new_category") }}
+                                        <span>New Category</span>
+                                    </label>
+                                </div>
+
+                                <div id="category-select-box">
+                                    {{ form.category_id(class="form-input-full") }}
+                                </div>
+                                <div id="new-category-box" class="d-none">
+                                    {{ form.new_category(class="form-input-full", placeholder="Enter new category name...") }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group mb-4">
+                                <label class="fw-bold mb-2">{{ form.language.label }}</label>
+                                {{ form.language(class="form-input-full", placeholder="Uzbek") }}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group mb-4">
+                                <label class="fw-bold mb-2">{{ form.published_year.label }}</label>
+                                {{ form.published_year(class="form-input-full", placeholder="2024") }}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group mb-4">
+                                <label class="fw-bold mb-2">{{ form.nn_number.label }}</label>
+                                {{ form.nn_number(class="form-input-full") }}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group mb-4">
+                                <label class="fw-bold mb-2">{{ form.quantity.label }}</label>
+                                {{ form.quantity(class="form-input-full", min="0") }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label class="fw-bold mb-2">{{ form.description.label }}</label>
+                        {{ form.description(class="form-input-full textarea-custom", placeholder="Brief summary of the book...") }}
+                    </div>
+
+                    <!-- Section: Media -->
+                    <div class="form-section-title">
+                        <i class="fas fa-file-upload text-primary"></i> Media & Files
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-4">
+                                <label class="fw-bold mb-2">{{ form.cover_image.label }}</label>
+                                <div class="upload-zone" onclick="document.getElementById('cover_image').click()">
+                                    <i class="fas fa-image upload-icon"></i>
+                                    <span class="upload-text-main" id="cover-text">Click to upload cover</span>
+                                    <span class="text-muted small">JPG, PNG or WebP</span>
+                                </div>
+                                {{ form.cover_image(id="cover_image", class="d-none") }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-4">
+                                <label class="fw-bold mb-2">{{ form.pdf_file.label }}</label>
+                                <div class="upload-zone" onclick="document.getElementById('pdf_file').click()">
+                                    <i class="fas fa-file-pdf upload-icon"></i>
+                                    <span class="upload-text-main" id="pdf-text">Click to upload PDF</span>
+                                    <span class="text-muted small">PDF format only</span>
+                                </div>
+                                {{ form.pdf_file(id="pdf_file", class="d-none") }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit -->
+                    <div class="mt-5 d-flex justify-content-end gap-3">
+                        <a href="{{ url_for('librarian.manage_books') }}" class="btn btn-ghost px-4">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary px-5 fw-bold">
+                            <i class="fas fa-save me-2"></i> Save Book Data
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Toggle Author Box
+    const useNewAuthor = document.getElementById("use_new_author");
+    const authorSelect = document.getElementById("author-select-box");
+    const authorInput = document.getElementById("new-author-box");
+
+    useNewAuthor.addEventListener("change", function() {
+        authorSelect.classList.toggle('d-none', this.checked);
+        authorInput.classList.toggle('d-none', !this.checked);
+    });
+
+    // Toggle Category Box
+    const useNewCategory = document.getElementById("use_new_category");
+    const categorySelect = document.getElementById("category-select-box");
+    const categoryInput = document.getElementById("new-category-box");
+
+    useNewCategory.addEventListener("change", function() {
+        categorySelect.classList.toggle('d-none', this.checked);
+        categoryInput.classList.toggle('d-none', !this.checked);
+    });
+
+    // File name display
+    document.getElementById("cover_image").onchange = function() {
+        if(this.files.length) document.getElementById("cover-text").innerText = this.files[0].name;
+    };
+    document.getElementById("pdf_file").onchange = function() {
+        if(this.files.length) document.getElementById("pdf-text").innerText = this.files[0].name;
+    };
+</script>
+{% endblock %}

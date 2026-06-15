@@ -1,0 +1,203 @@
+{% extends "layouts/base.html" %}
+{% block title %}{% if competition %}Edit Competition{% else %}Create Competition{% endif %} - AKHU Library{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/competition.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="competition-page">
+    <form method="post" enctype="multipart/form-data" id="competitionBuilderForm" class="competition-form-container">
+        {{ form.csrf_token }}
+        <input type="hidden" name="status" id="competitionStatus" value="{{ competition.status if competition else 'draft' }}">
+
+        <div class="competition-form-header">
+            <span class="hero-eyebrow"><i class="fas fa-clipboard-check"></i> Competition Builder</span>
+            <h1>{% if competition %}Edit Competition{% else %}Create Competition{% endif %}</h1>
+            <p>Build a test-based academic competition in one page. Questions stay inside this competition.</p>
+        </div>
+
+        <div class="competition-form-body">
+            <div class="builder-section">
+                <div class="step-title"><i class="fas fa-circle-info"></i> Basic Information</div>
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label">Competition Title</label>
+                        {{ form.title(class="form-control form-control-lg", placeholder="e.g. Digital Literacy Quiz") }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Competition Image</label>
+                        {{ form.competition_image(class="form-control", accept=".jpg,.jpeg,.png,.webp") }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Description</label>
+                        {{ form.description(class="form-control", rows=4, placeholder="Short description, rules, and what students should prepare.") }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Faculty Restriction</label>
+                        {{ form.competition_type(class="form-select", id="compTypeSelect") }}
+                    </div>
+                    <div class="col-md-6" id="facultyRestrictionGroup">
+                        <label class="form-label">Allowed Faculties</label>
+                        <div class="choices-box compact">
+                            {% for val, label in form.faculty_ids.choices %}
+                            <label class="choice-item {% if val in form.faculty_ids.data %}selected{% endif %}">
+                                <input type="checkbox" name="faculty_ids" value="{{ val }}" {% if val in form.faculty_ids.data %}checked{% endif %} class="form-check-input">
+                                <span>{{ label }}</span>
+                            </label>
+                            {% else %}
+                            <div class="muted p-2">No faculties found.</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="builder-section">
+                <div class="step-title"><i class="fas fa-sliders"></i> Competition Settings</div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Start Date</label>
+                        {{ form.start_date(class="form-control", type="datetime-local") }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">End Date</label>
+                        {{ form.end_date(class="form-control", type="datetime-local") }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Time Limit</label>
+                        {{ form.time_limit_minutes(class="form-control", type="number", placeholder="Minutes") }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Max Attempts</label>
+                        {{ form.max_attempts(class="form-control", type="number") }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Passing Score (%)</label>
+                        {{ form.passing_score(class="form-control", type="number") }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Top Winners</label>
+                        {{ form.top_winners_count(class="form-control", type="number") }}
+                    </div>
+                </div>
+
+                <div class="switch-container mt-3">
+                    <div class="switch-card">
+                        <div>
+                            <span class="switch-title"><i class="fas fa-shuffle"></i> Shuffle Questions</span>
+                            <span class="switch-desc">Each attempt receives a different order.</span>
+                        </div>
+                        <label class="switch-input-wrapper">{{ form.randomize_questions(class="switch-cb") }}<span class="switch-slider"></span></label>
+                    </div>
+                    <div class="switch-card">
+                        <div>
+                            <span class="switch-title"><i class="fas fa-shuffle"></i> Shuffle Answers</span>
+                            <span class="switch-desc">Answer options are randomized per question.</span>
+                        </div>
+                        <label class="switch-input-wrapper">{{ form.randomize_answers(class="switch-cb") }}<span class="switch-slider"></span></label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="builder-section">
+                <div class="step-title"><i class="fas fa-file-excel"></i> Import Questions From Excel</div>
+                <div class="upload-zone compact-upload" id="excelUploadZone">
+                    <input type="file" name="questions_excel" id="questionsExcel" accept=".xlsx,.xls">
+                    <div>
+                        <div class="upload-icon"><i class="fas fa-cloud-arrow-up"></i></div>
+                        <h3>Drop Excel file here or click to upload</h3>
+                        <p>Format: Question | Option A | Option B | Option C | Option D | Correct Answer | Points</p>
+                        <div class="upload-file-chosen" id="excelFileChosen"><i class="fas fa-file-excel"></i> <span></span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="builder-section">
+                <div class="step-title">
+                    <i class="fas fa-circle-question"></i>
+                    Questions
+                    {% if has_attempts %}<span class="comp-status-badge ended ms-2">Locked after attempts</span>{% endif %}
+                </div>
+                <div class="question-builder-toolbar">
+                    <button type="button" class="btn btn-primary" id="addQuestionBtn" {% if has_attempts %}disabled{% endif %}>
+                        <i class="fas fa-plus"></i> Add Question
+                    </button>
+                    <span class="muted" id="questionCountLabel">0 questions</span>
+                </div>
+                <div id="inlineQuestions" class="inline-question-list"></div>
+            </div>
+        </div>
+
+        <div class="form-navigation-bar">
+            <a href="{{ url_for('competitions.manage_list') }}" class="btn btn-ghost">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+            <div class="toolbar-group">
+                <button type="button" class="btn btn-ghost" onclick="submitCompetition('draft')">
+                    <i class="fas fa-floppy-disk"></i> Save Draft
+                </button>
+                <button type="button" class="btn btn-primary" onclick="submitCompetition('published')">
+                    <i class="fas fa-paper-plane"></i> Publish
+                </button>
+            </div>
+        </div>
+    </form>
+</section>
+
+<template id="questionCardTemplate">
+    <article class="inline-question-card">
+        <div class="inline-question-head">
+            <span class="question-number">Question</span>
+            <button type="button" class="btn btn-ghost btn-sm remove-question-btn">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label class="form-label">Question Text</label>
+                <textarea name="question_text" class="form-control question-text-input" rows="3" required></textarea>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Question Type</label>
+                <select name="question_type" class="form-select question-type-select">
+                    <option value="single_choice">Single Choice</option>
+                    <option value="multiple_choice">Multiple Choice</option>
+                    <option value="true_false">True / False</option>
+                </select>
+                <label class="form-label mt-3">Points</label>
+                <input type="number" name="points" class="form-control question-points-input" min="1" value="1" required>
+            </div>
+            <div class="col-md-6 option-field option-candidate">
+                <label class="form-label">Option A</label>
+                <input type="text" name="option_a" class="form-control option-a-input" required>
+            </div>
+            <div class="col-md-6 option-field option-candidate">
+                <label class="form-label">Option B</label>
+                <input type="text" name="option_b" class="form-control option-b-input" required>
+            </div>
+            <div class="col-md-6 option-field optional-option">
+                <label class="form-label">Option C</label>
+                <input type="text" name="option_c" class="form-control option-c-input">
+            </div>
+            <div class="col-md-6 option-field optional-option">
+                <label class="form-label">Option D</label>
+                <input type="text" name="option_d" class="form-control option-d-input">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Correct Answer</label>
+                <input type="text" name="correct_answer" class="form-control correct-answer-input" placeholder="A or A,C" required>
+                <small class="muted">Single: A. Multiple: A,C. True/False: True or False.</small>
+            </div>
+        </div>
+    </article>
+</template>
+
+<script>
+window.initialCompetitionQuestions = {{ question_payload|tojson }};
+window.questionsLocked = {{ 'true' if has_attempts else 'false' }};
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/competition_wizard.js') }}"></script>
+{% endblock %}

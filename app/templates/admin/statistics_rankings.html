@@ -1,0 +1,192 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Faculty & Group Rankings | Admin Panel{% endblock %}
+
+{% block content %}
+<section class="admin-dashboard-page admin-statistics-page">
+    <div class="section-header row-between">
+        <div>
+            <span class="eyebrow">Analytics Module</span>
+            <h1>Top Faculties & Groups</h1>
+            <p class="muted">Faculty and group performance scores based on reading, borrowing, and competition activity.</p>
+        </div>
+        <div class="header-actions">
+            <a href="{{ url_for('admin.statistics') }}" class="btn btn-ghost">
+                <i class="fas fa-arrow-left"></i> Analytics Center
+            </a>
+        </div>
+    </div>
+
+    {% set faculty_count = faculty_rankings|length %}
+    {% set group_count = group_rankings|length %}
+    {% set faculty_avg = (faculty_rankings|map(attribute='score')|sum / faculty_count)|round(1) if faculty_count else None %}
+    {% set group_avg = (group_rankings|map(attribute='score')|sum / group_count)|round(1) if group_count else None %}
+
+    <section class="analytics-hub-section admin-panel">
+        <div class="section-header row-between">
+            <div>
+                <h2>Ranking Summary</h2>
+                <p>Compare the university's top faculties and groups at a glance.</p>
+            </div>
+        </div>
+
+        <div class="statistics-kpi-grid admin-summary-grid">
+            <div class="stat-card">
+                <span>Total faculties</span>
+                <strong>{{ faculty_count }}</strong>
+            </div>
+            <div class="stat-card">
+                <span>Total groups</span>
+                <strong>{{ group_count }}</strong>
+            </div>
+            <div class="stat-card">
+                <span>Avg. faculty score</span>
+                <strong>{{ faculty_avg if faculty_avg is not none else '—' }}</strong>
+            </div>
+            <div class="stat-card">
+                <span>Avg. group score</span>
+                <strong>{{ group_avg if group_avg is not none else '—' }}</strong>
+            </div>
+        </div>
+    </section>
+
+    <div class="card glass admin-users-search-card mb-4">
+        <form method="get" action="{{ url_for('admin.statistics_rankings') }}" class="filters-form admin-users-search">
+            <div class="search-shell">
+                <i class="fas fa-search"></i>
+                <input type="text" name="q" value="{{ filters.q or '' }}" class="form-input" placeholder="Search faculty or group..." aria-label="Search rankings">
+            </div>
+            <input type="hidden" name="sort" value="{{ filters.sort or 'score' }}">
+            <input type="hidden" name="direction" value="{{ filters.direction or 'desc' }}">
+            <input type="hidden" name="per_page" value="{{ filters.per_page or 20 }}">
+
+            <div class="search-actions-row">
+                <button type="submit" class="btn btn-primary btn-sm">Search</button>
+                {% if filters.q %}
+                    <a href="{{ url_for('admin.statistics_rankings') }}" class="btn btn-ghost btn-sm">Reset</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <section class="analytics-table-card mb-4">
+        <div class="table-summary">
+            <div>
+                <span class="muted">Faculty rankings across engagement, borrowing, and total score.</span>
+            </div>
+            <div class="table-actions">
+                <span class="small muted">Page {{ faculty_pagination.page }} of {{ faculty_pagination.pages }}</span>
+            </div>
+        </div>
+
+        {% macro sort_link(column_key, label) -%}
+            {%- set current_sort = filters.sort or '' -%}
+            {%- set current_direction = filters.direction or 'desc' -%}
+            {%- set next_direction = 'asc' if current_sort == column_key and current_direction == 'desc' else 'desc' -%}
+            <a class="sort-link" href="{{ url_for('admin.statistics_rankings', q=filters.q if filters.q else None, sort=column_key, direction=next_direction, page=1, per_page=filters.per_page) }}">
+                {{ label }}
+                {% if current_sort == column_key %}
+                    <span class="sort-indicator">{{ '↓' if current_direction == 'desc' else '↑' }}</span>
+                {% endif %}
+            </a>
+        {%- endmacro %}
+
+        {% if faculty_rankings %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>{{ sort_link('name', 'Faculty') }}</th>
+                        <th>{{ sort_link('active_users', 'Students') }}</th>
+                        <th>{{ sort_link('borrows', 'Borrows') }}</th>
+                        <th>{{ sort_link('score', 'Total Score') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in faculty_rankings %}
+                    <tr class="{% if loop.index <= 3 %}top-rank-row{% endif %}">
+                        <td data-label="Rank">
+                            {% if loop.index == 1 %}
+                                <span class="rank-badge gold">🥇 Rank 1</span>
+                            {% elif loop.index == 2 %}
+                                <span class="rank-badge silver">🥈 Rank 2</span>
+                            {% elif loop.index == 3 %}
+                                <span class="rank-badge bronze">🥉 Rank 3</span>
+                            {% else %}
+                                <span class="rank-badge default">{{ loop.index }}</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Faculty"><strong>{{ row.name }}</strong></td>
+                        <td data-label="Students" class="text-right">{{ row.active_users }}</td>
+                        <td data-label="Borrows" class="text-right">{{ row.borrows }}</td>
+                        <td data-label="Total Score" class="text-right"><span class="score-badge {{ 'high' if row.score|float >= 75 else 'medium' if row.score|float >= 40 else 'low' }}">{{ row.score }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+            <div class="empty-table-state">
+                <span>📊</span>
+                <h3>No faculty ranking data available.</h3>
+                <p class="muted">Refresh later or broaden your search.</p>
+            </div>
+        {% endif %}
+    </section>
+
+    <section class="analytics-table-card">
+        <div class="table-summary">
+            <div>
+                <span class="muted">Group rankings sorted by total score and borrowing activity.</span>
+            </div>
+            <div class="table-actions">
+                <span class="small muted">Page {{ group_pagination.page }} of {{ group_pagination.pages }}</span>
+            </div>
+        </div>
+
+        {% if group_rankings %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>{{ sort_link('name', 'Group') }}</th>
+                        <th>{{ sort_link('active_users', 'Students') }}</th>
+                        <th>{{ sort_link('borrows', 'Borrows') }}</th>
+                        <th>{{ sort_link('score', 'Total Score') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in group_rankings %}
+                    <tr class="{% if loop.index <= 3 %}top-rank-row{% endif %}">
+                        <td data-label="Rank">
+                            {% if loop.index == 1 %}
+                                <span class="rank-badge gold">🥇 Rank 1</span>
+                            {% elif loop.index == 2 %}
+                                <span class="rank-badge silver">🥈 Rank 2</span>
+                            {% elif loop.index == 3 %}
+                                <span class="rank-badge bronze">🥉 Rank 3</span>
+                            {% else %}
+                                <span class="rank-badge default">{{ loop.index }}</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Group"><strong>{{ row.name }}</strong></td>
+                        <td data-label="Students" class="text-right">{{ row.active_users }}</td>
+                        <td data-label="Borrows" class="text-right">{{ row.borrows }}</td>
+                        <td data-label="Total Score" class="text-right"><span class="score-badge {{ 'high' if row.score|float >= 75 else 'medium' if row.score|float >= 40 else 'low' }}">{{ row.score }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+            <div class="empty-table-state">
+                <span>📊</span>
+                <h3>No group ranking data available.</h3>
+                <p class="muted">Refresh later or broaden your search.</p>
+            </div>
+        {% endif %}
+    </section>
+</section>
+{% endblock %}

@@ -1,0 +1,422 @@
+{% extends "layouts/base.html" %}
+{% block title %}Question Bank{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/competition.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/librarian.css') }}">
+{% endblock %}
+{% block content %}
+
+<!-- Calculate mectrics inside template safely -->
+{% set total_pts = namespace(value=0) %}
+{% set count_single = namespace(value=0) %}
+{% set count_multiple = namespace(value=0) %}
+{% set count_tf = namespace(value=0) %}
+
+{% for q in questions %}
+    {% set total_pts.value = total_pts.value + (q.points or 0) %}
+    {% if q.question_type == 'single' or q.question_type == 'multiple_choice' %}
+        {% set count_single.value = count_single.value + 1 %}
+    {% elif q.question_type == 'multiple' %}
+        {% set count_multiple.value = count_multiple.value + 1 %}
+    {% elif q.question_type == 'true_false' %}
+        {% set count_tf.value = count_tf.value + 1 %}
+    {% endif %}
+{% endfor %}
+
+<section class="competition-page">
+    <a href="{{ url_for('competitions.manage_list') }}" class="btn btn-ghost btn-sm mb-3">
+        <i class="fas fa-arrow-left"></i> Back to Competitions
+    </a>
+    
+    <div class="row-between flex-wrap gap-3 mb-4">
+        <div>
+            <h1><i class="fas fa-circle-question text-primary"></i> Question Bank</h1>
+            <p class="muted">Manage and review your collection of quiz questions.</p>
+        </div>
+        <div class="manage-comp-toolbar">
+            <a href="{{ url_for('questions.download_template') }}" class="btn btn-ghost">
+                <i class="fas fa-file-download"></i> Template
+            </a>
+            <a href="{{ url_for('questions.import_questions') }}" class="btn btn-gold">
+                <i class="fas fa-file-import"></i> Import Excel
+            </a>
+            <a href="{{ url_for('questions.export_questions') }}" class="btn btn-ghost">
+                <i class="fas fa-file-export"></i> Export Bank
+            </a>
+            <a href="{{ url_for('questions.create') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Single Question
+            </a>
+        </div>
+    </div>
+
+    <!-- Redesigned Metrics Grid -->
+    <div class="qbank-metrics-grid">
+        <div class="qbank-metric-card total">
+            <div class="qbank-metric-info">
+                <span class="qbank-metric-value">{{ questions|length }}</span>
+                <span class="qbank-metric-label">Filtered / {{ total }} Total</span>
+            </div>
+            <div class="qbank-metric-icon">
+                <i class="fas fa-circle-question"></i>
+            </div>
+        </div>
+        <div class="qbank-metric-card single">
+            <div class="qbank-metric-info">
+                <span class="qbank-metric-value">{{ count_single.value }}</span>
+                <span class="qbank-metric-label">Single Choice</span>
+            </div>
+            <div class="qbank-metric-icon">
+                <i class="fas fa-check-double"></i>
+            </div>
+        </div>
+        <div class="qbank-metric-card multiple">
+            <div class="qbank-metric-info">
+                <span class="qbank-metric-value">{{ count_multiple.value }}</span>
+                <span class="qbank-metric-label">Multiple Choice</span>
+            </div>
+            <div class="qbank-metric-icon">
+                <i class="fas fa-list-check"></i>
+            </div>
+        </div>
+        <div class="qbank-metric-card points">
+            <div class="qbank-metric-info">
+                <span class="qbank-metric-value">{{ total_pts.value }}</span>
+                <span class="qbank-metric-label">Total Points</span>
+            </div>
+            <div class="qbank-metric-icon">
+                <i class="fas fa-gem"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Redesigned Filter Panel -->
+    <form method="get" class="qbank-toolbar-card mb-4">
+        <div class="form-grid" style="grid-template-columns: 2fr 1fr 1fr auto; align-items: end; gap: 1rem;">
+            <div class="form-group mb-0">
+                <label for="q"><i class="fas fa-search"></i> Search Keyword</label>
+                <input type="search" name="q" id="q" value="{{ q }}" class="form-input" placeholder="Search by question text...">
+            </div>
+            <div class="form-group mb-0">
+                <label for="category"><i class="fas fa-filter"></i> Category</label>
+                <select name="category" id="category" class="form-select">
+                    <option value="">All Categories</option>
+                    <option value="book_content" {% if category=='book_content' %}selected{% endif %}>Book content</option>
+                    <option value="characters" {% if category=='characters' %}selected{% endif %}>Characters</option>
+                    <option value="events" {% if category=='events' %}selected{% endif %}>Events</option>
+                    <option value="quotes" {% if category=='quotes' %}selected{% endif %}>Quotes</option>
+                    <option value="authors" {% if category=='authors' %}selected{% endif %}>Authors</option>
+                    <option value="critical_thinking" {% if category=='critical_thinking' %}selected{% endif %}>Critical thinking</option>
+                </select>
+            </div>
+            <div class="form-group mb-0">
+                <label for="type"><i class="fas fa-list"></i> Question Type</label>
+                <select name="type" id="type" class="form-select">
+                    <option value="">All Types</option>
+                    <option value="single" {% if qtype=='single' %}selected{% endif %}>Single Choice</option>
+                    <option value="multiple" {% if qtype=='multiple' %}selected{% endif %}>Multiple Choice</option>
+                    <option value="true_false" {% if qtype=='true_false' %}selected{% endif %}>True / False</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <button type="submit" class="btn btn-primary" style="height: 48px; border-radius: 12px; display: inline-flex; align-items: center; gap: 0.5rem; justify-content: center; padding: 0 1.5rem;">
+                    <i class="fas fa-filter"></i> Filter
+                </button>
+                {% if q or category or qtype %}
+                    <a href="{{ url_for('questions.index') }}" class="btn btn-ghost" style="height: 48px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; width: 48px; padding: 0;" title="Clear filters">
+                        <i class="fas fa-rotate-left"></i>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+
+    <!-- Redesigned Datatable -->
+    <div class="qbank-table-container">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">ID</th>
+                    <th>Question Text</th>
+                    <th>Type</th>
+                    <th>Category</th>
+                    <th>Points</th>
+                    <th>Options</th>
+                    <th style="width: 80px; text-align: center;">Preview</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for q in questions %}
+                <tr class="qbank-row-clickable" data-question-id="{{ q.id }}">
+                    <td><strong>#{{ q.id }}</strong></td>
+                    <td>
+                        <div class="question-text-wrapper" style="font-weight: 500; color: #1e293b;">
+                            {{ q.question_text|truncate(85) }}
+                        </div>
+                        {% if q.book %}
+                        <div class="small text-primary mt-1" style="font-size: 0.78rem; font-weight: 600;">
+                            <i class="fas fa-book"></i> Book: {{ q.book.title }}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="qbank-badge-type {{ q.question_type }}">
+                            {% if q.question_type == 'single' or q.question_type == 'multiple_choice' %}
+                                <i class="fas fa-circle-dot"></i> Single
+                            {% elif q.question_type == 'multiple' %}
+                                <i class="fas fa-square-check"></i> Multiple
+                            {% elif q.question_type == 'true_false' %}
+                                <i class="fas fa-right-left"></i> True/False
+                            {% else %}
+                                <i class="fas fa-quote-left"></i> {{ q.question_type }}
+                            {% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        {% if q.category %}
+                            <span class="qbank-badge-category">
+                                {% if q.category == 'book_content' %}
+                                    <i class="fas fa-book-open"></i> Content
+                                {% elif q.category == 'characters' %}
+                                    <i class="fas fa-user-check"></i> Characters
+                                {% elif q.category == 'quotes' %}
+                                    <i class="fas fa-quote-right"></i> Quotes
+                                {% elif q.category == 'authors' %}
+                                    <i class="fas fa-feather"></i> Authors
+                                {% else %}
+                                    <i class="fas fa-brain"></i> {{ q.category|replace('_', ' ')|capitalize }}
+                                {% endif %}
+                            </span>
+                        {% else %}
+                            <span class="muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="qbank-points-chip {% if q.points >= 5 %}high{% endif %}">
+                            +{{ q.points }} {% if q.points == 1 %}pt{% else %}pts{% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="qbank-options-count">
+                            {{ q.options|length }} choices
+                        </span>
+                    </td>
+                    <td style="text-align: center;">
+                        <button class="qbank-preview-btn btn-preview-trigger" data-question-id="{{ q.id }}" title="Quick preview choices">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center py-5">
+                        <div class="muted py-3">
+                            <i class="fas fa-circle-question fa-3x mb-3" style="color: #cbd5e1;"></i>
+                            <p style="font-size: 1.05rem; font-weight: 500;">No questions found matching the filter criteria.</p>
+                            <p class="small mt-1">Try resetting the filters or upload new questions.</p>
+                            <div class="mt-4">
+                                <a href="{{ url_for('questions.import_questions') }}" class="btn btn-gold btn-sm">
+                                    <i class="fas fa-file-import"></i> Upload Excel Sheet
+                                </a>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Preview Drawer Backdrop Overlay -->
+    <div class="preview-drawer-overlay" id="previewDrawerOverlay"></div>
+
+    <!-- Preview Slide-over Drawer -->
+    <div class="preview-drawer" id="previewDrawer">
+        <div class="preview-drawer-header">
+            <div class="preview-drawer-title-block">
+                <h3 id="drawerTitle"><i class="fas fa-circle-question text-warning"></i> Question Preview</h3>
+                <span id="drawerSubtitle">Question ID #<span id="drawerId"></span></span>
+            </div>
+            <button class="preview-drawer-close" id="previewDrawerClose">
+                <i class="fas fa-xmark"></i>
+            </button>
+        </div>
+        <div class="preview-drawer-body">
+            <!-- Question text card -->
+            <div class="drawer-question-card">
+                <p class="drawer-question-text" id="drawerQuestionText"></p>
+            </div>
+
+            <!-- Options Section -->
+            <div>
+                <h4 class="drawer-section-title"><i class="fas fa-list-ul"></i> Choice Options</h4>
+                <div class="drawer-options-list" id="drawerOptionsList"></div>
+            </div>
+
+            <!-- Explanation Section (Conditionally shown) -->
+            <div id="drawerExplanationWrapper" style="display: none;">
+                <h4 class="drawer-section-title"><i class="fas fa-lightbulb"></i> Explanation</h4>
+                <div class="drawer-explanation-box">
+                    <p class="drawer-explanation-text" id="drawerExplanationText"></p>
+                </div>
+            </div>
+
+            <!-- Meta tags section -->
+            <div>
+                <h4 class="drawer-section-title"><i class="fas fa-tags"></i> Question Metadata</h4>
+                <div class="drawer-meta-grid">
+                    <div class="drawer-meta-card">
+                        <span class="drawer-meta-label">Category</span>
+                        <span class="drawer-meta-value" id="drawerMetaCategory">—</span>
+                    </div>
+                    <div class="drawer-meta-card">
+                        <span class="drawer-meta-label">Type</span>
+                        <span class="drawer-meta-value" id="drawerMetaType">—</span>
+                    </div>
+                    <div class="drawer-meta-card" id="drawerMetaBookCard" style="grid-column: span 2; display: none;">
+                        <span class="drawer-meta-label">Related Book</span>
+                        <span class="drawer-meta-value" id="drawerMetaBook">—</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Embedded questions options data in structured JSON -->
+<script id="questions-data" type="application/json">
+{
+  {% for q in questions %}
+    "{{ q.id }}": {
+      "id": "{{ q.id }}",
+      "text": {{ q.question_text|tojson }},
+      "type": "{{ q.question_type }}",
+      "category": "{{ q.category or '-' }}",
+      "points": "{{ q.points }}",
+      "explanation": {{ (q.explanation or '')|tojson }},
+      "book_title": "{{ q.book.title if q.book else '' }}",
+      "options": [
+        {% for opt in q.options %}
+          {
+            "text": {{ opt.option_text|tojson }},
+            "is_correct": {{ 'true' if opt.is_correct else 'false' }},
+            "letter": "{{ loop.index0 | string | replace('0', 'A') | replace('1', 'B') | replace('2', 'C') | replace('3', 'D') | replace('4', 'E') | replace('5', 'F') }}"
+          }{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ]
+    }{% if not loop.last %},{% endif %}
+  {% endfor %}
+}
+</script>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const rawData = document.getElementById('questions-data').textContent;
+    const questionsDb = JSON.parse(rawData || '{}');
+
+    const drawer = document.getElementById('previewDrawer');
+    const overlay = document.getElementById('previewDrawerOverlay');
+    const closeBtn = document.getElementById('previewDrawerClose');
+
+    const drawerId = document.getElementById('drawerId');
+    const drawerQuestionText = document.getElementById('drawerQuestionText');
+    const drawerOptionsList = document.getElementById('drawerOptionsList');
+    const drawerExplanationWrapper = document.getElementById('drawerExplanationWrapper');
+    const drawerExplanationText = document.getElementById('drawerExplanationText');
+    const drawerMetaCategory = document.getElementById('drawerMetaCategory');
+    const drawerMetaType = document.getElementById('drawerMetaType');
+    const drawerMetaBookCard = document.getElementById('drawerMetaBookCard');
+    const drawerMetaBook = document.getElementById('drawerMetaBook');
+
+    function openDrawer(qid) {
+        const question = questionsDb[qid];
+        if (!question) return;
+
+        // Populate drawer elements
+        drawerId.textContent = question.id;
+        drawerQuestionText.textContent = question.text;
+
+        // Populate Options
+        drawerOptionsList.innerHTML = '';
+        question.options.forEach(opt => {
+            const item = document.createElement('div');
+            item.className = 'drawer-option-item';
+            if (opt.is_correct) {
+                item.classList.add('correct');
+            }
+
+            item.innerHTML = `
+                <div class="drawer-option-item-left">
+                    <span class="drawer-option-badge">${opt.letter}</span>
+                    <span class="drawer-option-text">${opt.text}</span>
+                </div>
+                ${opt.is_correct ? '<span class="drawer-option-status-icon"><i class="fas fa-circle-check"></i></span>' : ''}
+            `;
+            drawerOptionsList.appendChild(item);
+        });
+
+        // Explanation text
+        if (question.explanation && question.explanation.trim() !== '') {
+            drawerExplanationText.textContent = question.explanation;
+            drawerExplanationWrapper.style.display = 'block';
+        } else {
+            drawerExplanationWrapper.style.display = 'none';
+        }
+
+        // Meta data
+        drawerMetaCategory.textContent = question.category.replace('_', ' ').toUpperCase();
+        drawerMetaType.textContent = question.type.toUpperCase();
+
+        if (question.book_title) {
+            drawerMetaBook.textContent = question.book_title;
+            drawerMetaBookCard.style.display = 'block';
+        } else {
+            drawerMetaBookCard.style.display = 'none';
+        }
+
+        // Activate drawer
+        drawer.classList.add('active');
+        overlay.classList.add('active');
+    }
+
+    function closeDrawer() {
+        drawer.classList.remove('active');
+        overlay.classList.remove('active');
+    }
+
+    // Attach click listeners to rows
+    document.querySelectorAll('.qbank-row-clickable').forEach(row => {
+        row.addEventListener('click', function(e) {
+            // Prevent drawer trigger if clicking preview button or a link
+            if (e.target.closest('.qbank-preview-btn') || e.target.closest('a')) {
+                return;
+            }
+            const qid = this.getAttribute('data-question-id');
+            openDrawer(qid);
+        });
+    });
+
+    // Attach click listeners to preview buttons
+    document.querySelectorAll('.btn-preview-trigger').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const qid = this.getAttribute('data-question-id');
+            openDrawer(qid);
+        });
+    });
+
+    // Close listeners
+    closeBtn.addEventListener('click', closeDrawer);
+    overlay.addEventListener('click', closeDrawer);
+
+    // Esc keyboard key to close
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeDrawer();
+        }
+    });
+});
+</script>
+{% endblock %}

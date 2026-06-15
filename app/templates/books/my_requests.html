@@ -1,0 +1,93 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+My Borrow Requests
+{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/book.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="library-shell-pro">
+
+    <div class="section-header">
+        <div>
+            <h1>My Borrow Requests</h1>
+            <p class="muted">
+                Track your physical book borrow requests and their current status.
+            </p>
+        </div>
+
+        <a href="{{ url_for('user.dashboard') }}" class="btn btn-ghost">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    {% if requests %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Book</th>
+                        <th>Requested</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for req in requests %}
+                        <tr>
+                            <td>
+                                <strong>
+                                    {{ req.book.title if req.book else "Deleted Book" }}
+                                </strong>
+
+                                {% if req.book and req.book.author %}
+                                    <div class="small muted">
+                                        {{ req.book.author.fullname }}
+                                    </div>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {{ req.request_date.strftime('%d %b %Y') }}
+                                <div class="small muted">
+                                    {{ req.request_date.strftime('%H:%M') }}
+                                </div>
+                            </td>
+
+                            <td>
+                                {% if req.status == "Pending" %}
+                                    <span class="badge blue">Pending</span>
+                                {% elif req.status == "Queued" %}
+                                    <span class="badge gold">Waiting List</span>
+                                    <div class="small muted">
+                                        Queue position: {{ req.waiting_position }}
+                                    </div>
+                                {% elif req.status == "Approved" %}
+                                    <span class="badge green">Approved</span>
+                                {% elif req.status == "Rejected" %}
+                                    <span class="badge red">Rejected</span>
+                                {% else %}
+                                    <span class="badge gray">{{ req.status }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="library-empty-pro">
+            <i class="fas fa-book-open"></i>
+            <h3>No Requests</h3>
+            <p>You have not sent any borrow requests yet.</p>
+            <a href="{{ url_for('books.index') }}" class="btn btn-primary">
+                Browse Library
+            </a>
+        </div>
+    {% endif %}
+
+</section>
+{% endblock %}

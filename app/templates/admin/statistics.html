@@ -1,0 +1,180 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Statistics | Admin Panel{% endblock %}
+
+{% block content %}
+<section class="admin-dashboard-page admin-dashboard-revamp admin-statistics-page">
+    <div class="section-header row-between">
+        <div>
+            <span class="eyebrow">Analytics Center</span>
+            <h1>Library Statistics</h1>
+            <p class="muted">Actionable KPIs, rankings, and trends based on live library data.</p>
+        </div>
+        <div class="header-actions">
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-ghost">
+                <i class="fas fa-arrow-left"></i> Dashboard
+            </a>
+            <a href="{{ url_for('admin.statistics') }}" class="btn btn-primary">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </a>
+        </div>
+    </div>
+
+    <section class="analytics-hub-section admin-panel">
+        <div class="section-header row-between">
+            <div>
+                <h2>Key Performance Indicators</h2>
+                <p>University library performance at a glance.</p>
+            </div>
+        </div>
+        <div class="stats-grid admin-summary-grid statistics-kpi-grid">
+            <div class="stat-card"><span>Total Users</span><strong>{{ overview.total_users }}</strong></div>
+            <div class="stat-card"><span>Total Students</span><strong>{{ stats.students }}</strong></div>
+            <div class="stat-card"><span>Total Books</span><strong>{{ overview.total_books }}</strong></div>
+            <div class="stat-card"><span>Physical Books</span><strong>{{ overview.physical_books }}</strong></div>
+            <div class="stat-card"><span>Digital Books</span><strong>{{ overview.digital_books }}</strong></div>
+            <div class="stat-card"><span>Active Borrowings</span><strong>{{ overview.active_borrowings }}</strong></div>
+            <div class="stat-card"><span>Active Competitions</span><strong>{{ competition_stats.active_competitions }}</strong></div>
+            <div class="stat-card"><span>Certificates Issued</span><strong>{{ competition_stats.certificates_issued }}</strong></div>
+            <div class="stat-card"><span>Pending Requests</span><strong>{{ overview.pending_requests }}</strong></div>
+        </div>
+    </section>
+
+    <section class="analytics-hub-section admin-panel">
+        <div class="section-header row-between">
+            <div>
+                <h2>Analytics Modules</h2>
+                <p class="muted">Jump directly into the university reading and borrowing rankings you need.</p>
+            </div>
+        </div>
+        <div class="statistics-module-grid">
+            <article class="statistics-module-card">
+                <div class="module-card-top">
+                    <span class="eyebrow">Reader Engagement</span>
+                    <h3>Top Readers</h3>
+                    <p>Discover the most active learners across the platform.</p>
+                </div>
+                <div class="module-card-summary">
+                    <div><strong>{{ top_readers_overall|length }}</strong><span>Ranked readers</span></div>
+                    <div><strong>{{ stats.users_week }}</strong><span>New users this week</span></div>
+                </div>
+                <a href="{{ url_for('admin.statistics_readers') }}" class="btn btn-gold btn-block">View Analytics</a>
+            </article>
+
+            <article class="statistics-module-card">
+                <div class="module-card-top">
+                    <span class="eyebrow">Borrowing Performance</span>
+                    <h3>Top Borrowers</h3>
+                    <p>Track the heaviest borrowers and overdue borrowing trends.</p>
+                </div>
+                <div class="module-card-summary">
+                    <div><strong>{{ overview.active_borrowings }}</strong><span>Active borrowings</span></div>
+                    <div><strong>{{ stats.overdue }}</strong><span>Overdue records</span></div>
+                </div>
+                <a href="{{ url_for('admin.statistics_borrowers') }}" class="btn btn-gold btn-block">View Analytics</a>
+            </article>
+
+            <article class="statistics-module-card">
+                <div class="module-card-top">
+                    <span class="eyebrow">Competition Insights</span>
+                    <h3>Competition Leaders</h3>
+                    <p>Identify top performers in university reading competitions.</p>
+                </div>
+                <div class="module-card-summary">
+                    <div><strong>{{ competition_stats.participants }}</strong><span>Participants</span></div>
+                    <div><strong>{{ competition_stats.certificates_issued }}</strong><span>Certificates</span></div>
+                </div>
+                <a href="{{ url_for('admin.statistics_competition_leaders') }}" class="btn btn-gold btn-block">View Analytics</a>
+            </article>
+
+            <article class="statistics-module-card">
+                <div class="module-card-top">
+                    <span class="eyebrow">Institutional Rankings</span>
+                    <h3>Top Faculties & Groups</h3>
+                    <p>Compare faculty and group performance using activity scores.</p>
+                </div>
+                <div class="module-card-summary">
+                    <div><strong>{{ faculty_rankings|length }}</strong><span>Faculty ranks</span></div>
+                    <div><strong>{{ group_rankings|length }}</strong><span>Group ranks</span></div>
+                </div>
+                <a href="{{ url_for('admin.statistics_rankings') }}" class="btn btn-gold btn-block">View Analytics</a>
+            </article>
+
+            <article class="statistics-module-card">
+                <div class="module-card-top">
+                    <span class="eyebrow">Physical Books</span>
+                    <h3>Popular Physical Books</h3>
+                    <p>Most requested and borrowed physical books in the library.</p>
+                </div>
+                <div class="module-card-summary">
+                    <div><strong>{{ popular_physical|length }}</strong><span>Popular titles</span></div>
+                    <div><strong>{{ overview.physical_books }}</strong><span>Total physical books</span></div>
+                </div>
+                <a href="{{ url_for('admin.statistics_physical_books') }}" class="btn btn-gold btn-block">View Analytics</a>
+            </article>
+
+            <article class="statistics-module-card">
+                <div class="module-card-top">
+                    <span class="eyebrow">Digital Reading</span>
+                    <h3>Popular Digital Books</h3>
+                    <p>See which ebooks and online reads drive the most engagement.</p>
+                </div>
+                <div class="module-card-summary">
+                    <div><strong>{{ popular_digital|length }}</strong><span>Popular titles</span></div>
+                    <div><strong>{{ overview.digital_books }}</strong><span>Total digital books</span></div>
+                </div>
+                <a href="{{ url_for('admin.statistics_digital_books') }}" class="btn btn-gold btn-block">View Analytics</a>
+            </article>
+        </div>
+    </section>
+
+    <div class="analytics-hub-section">
+        <h2>Trend Analytics</h2>
+        <p>Last six months of activity.</p>
+        <div class="analytics-two-col">
+            {% set max_borrow = trends.borrow_months|map(attribute='value')|max|default(1, true) %}
+            {% set max_read = trends.reading_months|map(attribute='value')|max|default(1, true) %}
+            {% set max_reg = trends.registration_months|map(attribute='value')|max|default(1, true) %}
+
+            <section class="admin-panel">
+                <h3 class="h6">Monthly Borrows</h3>
+                <div class="trend-chart">
+                    {% for item in trends.borrow_months %}
+                    <div class="trend-bar-col">
+                        <span class="trend-bar-value">{{ item.value }}</span>
+                        <div class="trend-bar" style="height: {{ ((item.value / max_borrow) * 100)|round|int }}%;"></div>
+                        <span class="trend-bar-label">{{ item.label }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="admin-panel">
+                <h3 class="h6">Monthly Reading Progress Updates</h3>
+                <div class="trend-chart">
+                    {% for item in trends.reading_months %}
+                    <div class="trend-bar-col">
+                        <span class="trend-bar-value">{{ item.value }}</span>
+                        <div class="trend-bar" style="height: {{ ((item.value / max_read) * 100)|round|int }}%;"></div>
+                        <span class="trend-bar-label">{{ item.label }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+
+        <section class="admin-panel mt-4">
+            <h3 class="h6">Monthly Registrations</h3>
+            <div class="trend-chart">
+                {% for item in trends.registration_months %}
+                <div class="trend-bar-col">
+                    <span class="trend-bar-value">{{ item.value }}</span>
+                    <div class="trend-bar" style="height: {{ ((item.value / max_reg) * 100)|round|int }}%;"></div>
+                    <span class="trend-bar-label">{{ item.label }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+</section>
+{% endblock %}

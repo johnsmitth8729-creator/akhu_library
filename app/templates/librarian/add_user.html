@@ -1,0 +1,138 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Add User | Librarian Panel{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/librarian.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="librarian-area">
+    <div class="container">
+
+        <!-- HEADER -->
+        <div class="lm-form-page-header">
+            <div class="lm-form-page-title">
+                <div class="lm-form-page-icon">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <div>
+                    <h1>Add User</h1>
+                    <p class="text-muted">Create a library member account with auto-generated username and password.</p>
+                </div>
+            </div>
+            <a href="{{ back_url }}" class="btn btn-ghost lm-form-back-btn">
+                <i class="fas fa-chevron-left"></i>
+                <span>Back to Users</span>
+            </a>
+        </div>
+
+        <!-- SUCCESS BANNER -->
+        {% if created_user and created_password %}
+        <div class="lm-add-success-card">
+            <div class="lm-add-success-head">
+                <div class="lm-add-success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div>
+                    <h2 class="lm-add-success-title">Account Created!</h2>
+                    <p class="lm-add-success-sub">Share the credentials below securely with the new user.</p>
+                </div>
+            </div>
+            <div class="lm-add-success-grid">
+                <div class="lm-add-cred-row">
+                    <span class="lm-add-cred-label">Full Name</span>
+                    <strong class="lm-add-cred-value">{{ created_user.fullname }}</strong>
+                </div>
+                <div class="lm-add-cred-row">
+                    <span class="lm-add-cred-label">Username</span>
+                    <code class="lm-add-cred-value">{{ created_user.username }}</code>
+                </div>
+                <div class="lm-add-cred-row">
+                    <span class="lm-add-cred-label">Email</span>
+                    <strong class="lm-add-cred-value">{{ created_user.email }}</strong>
+                </div>
+                <div class="lm-add-cred-row">
+                    <span class="lm-add-cred-label">Phone</span>
+                    <strong class="lm-add-cred-value">{{ created_user.phone_number }}</strong>
+                </div>
+            </div>
+            <div class="lm-add-password-box">
+                <span class="lm-add-cred-label">Temporary Password</span>
+                <code class="lm-add-password-value">{{ created_password }}</code>
+                <p class="lm-add-password-hint">The user should change this password after their first login.</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- FORM CARD -->
+        <div class="lm-form-shell">
+            <div class="data-card lm-add-form-card">
+                <div class="lm-add-form-head">
+                    <div class="lm-panel-icon"><i class="fas fa-user-plus"></i></div>
+                    <div>
+                        <h2>User Details</h2>
+                        <p>Role is set to <strong>User</strong>. Username and password are generated automatically.</p>
+                    </div>
+                </div>
+
+                <form method="post" class="lm-add-form">
+                    {{ form.hidden_tag() }}
+                    <input type="hidden" name="source" value="{{ source }}">
+
+                    <div class="lm-add-form-grid">
+                        <div class="form-group lm-add-form-group">
+                            <label class="lm-add-label">{{ form.fullname.label }}</label>
+                            {{ form.fullname(class="form-input-full lm-add-input", placeholder="Ali Valiyev") }}
+                            {% for error in form.fullname.errors %}
+                                <span class="text-danger small d-block mt-1">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+
+                        <div class="form-group lm-add-form-group">
+                            <label class="lm-add-label">{{ form.email.label }}</label>
+                            {{ form.email(class="form-input-full lm-add-input", placeholder="ali@university.uz") }}
+                            {% for error in form.email.errors %}
+                                <span class="text-danger small d-block mt-1">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+
+                        <div class="form-group lm-add-form-group">
+                            <label class="lm-add-label">{{ form.phone_number.label }}</label>
+                            {{ form.phone_number(class="form-input-full lm-add-input", placeholder="998901112233") }}
+                            {% for error in form.phone_number.errors %}
+                                <span class="text-danger small d-block mt-1">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+
+                        <div class="form-group lm-add-form-group">
+                            <label class="lm-add-label">{{ form.faculty_id.label }}</label>
+                            {{ form.faculty_id(class="form-input-full lm-add-input form-select-full") }}
+                            {% for error in form.faculty_id.errors %}
+                                <span class="text-danger small d-block mt-1">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+
+                        <div class="form-group lm-add-form-group lm-add-span-2">
+                            <label class="lm-add-label">{{ form.group_name.label }}</label>
+                            {{ form.group_name(class="form-input-full lm-add-input", placeholder="221-22") }}
+                            {% for error in form.group_name.errors %}
+                                <span class="text-danger small d-block mt-1">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Form actions -->
+                    <div class="lm-add-form-actions">
+                        <a href="{{ back_url }}" class="btn btn-ghost lm-add-cancel-btn">Cancel</a>
+                        <button type="submit" class="btn btn-primary lm-add-submit-btn">
+                            <i class="fas fa-user-plus me-2"></i> Create User
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

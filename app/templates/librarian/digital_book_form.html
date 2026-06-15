@@ -1,0 +1,219 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}{% if book %}Edit Digital Book{% else %}Upload Digital Book{% endif %} | Librarian Panel{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/librarian.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="librarian-area">
+    <div class="container">
+        <div class="lm-book-form-shell">
+
+            <!-- HEADER -->
+            <div class="lm-book-form-header">
+                <div class="lm-book-form-title">
+                    <div class="lm-book-form-icon lm-book-form-icon-digital">
+                        <i class="fas fa-file-pdf"></i>
+                    </div>
+                    <div>
+                        <h1>{% if book %}Edit Digital Book{% else %}Upload Digital Book{% endif %}</h1>
+                        <p class="text-muted">Upload and manage PDF books for the university library digital collections.</p>
+                    </div>
+                </div>
+                <a href="{{ url_for('librarian.manage_books') }}" class="btn btn-ghost lm-book-form-cancel">
+                    <i class="fas fa-times"></i>
+                    <span>Discard</span>
+                </a>
+            </div>
+
+            <!-- FORM CARD -->
+            <div class="data-card lm-book-form-card">
+                <form method="POST" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+
+                    {% if form.errors %}
+                    <div class="form-error-panel">
+                        <strong><i class="fas fa-exclamation-circle me-1"></i> Please correct the highlighted errors:</strong>
+                        <ul>
+                            {% for field_name, errors in form.errors.items() %}
+                                {% for error in errors %}
+                                <li>{{ form[field_name].label.text if field_name in form else field_name }}: {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- ===== SECTION: Book Metadata ===== -->
+                    <div class="form-section-title">
+                        <i class="fas fa-book-open text-primary"></i> Book Metadata
+                    </div>
+
+                    <div class="lm-bf-grid lm-bf-grid-8-4">
+                        <div class="form-group">
+                            <label class="lm-bf-label">{{ form.title.label }}</label>
+                            {{ form.title(class="form-input-full lm-bf-input", placeholder="e.g. Introduction to Neural Networks") }}
+                        </div>
+                        <div class="form-group">
+                            <label class="lm-bf-label">{{ form.isbn.label }}</label>
+                            {{ form.isbn(class="form-input-full lm-bf-input", placeholder="ISBN-13 (Optional)") }}
+                        </div>
+                    </div>
+
+                    <!-- Author & Category -->
+                    <div class="lm-bf-grid lm-bf-grid-2col">
+                        <div class="form-group">
+                            <label class="lm-bf-label">Select Registered Author</label>
+                            {{ form.author_id(class="form-input-full lm-bf-input") }}
+                            <div class="mt-2">
+                                <label class="lm-bf-sublabel">Or enter a new writer name:</label>
+                                {{ form.new_author(class="form-input-full lm-bf-input", placeholder="Type new writer fullname...") }}
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="lm-bf-label">Select Catalog Category</label>
+                            {{ form.category_id(class="form-input-full lm-bf-input") }}
+                            <div class="mt-2">
+                                <label class="lm-bf-sublabel">Or enter a new catalog genre:</label>
+                                {{ form.new_category(class="form-input-full lm-bf-input", placeholder="Type new catalog category...") }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Language & Year -->
+                    <div class="lm-bf-grid lm-bf-grid-2col">
+                        <div class="form-group">
+                            <label class="lm-bf-label">{{ form.language.label }}</label>
+                            {{ form.language(class="form-input-full lm-bf-input", placeholder="e.g. English/Russian") }}
+                        </div>
+                        <div class="form-group">
+                            <label class="lm-bf-label">{{ form.published_year.label }}</label>
+                            {{ form.published_year(class="form-input-full lm-bf-input", placeholder="2024") }}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="lm-bf-label">{{ form.description.label }}</label>
+                        {{ form.description(class="form-input-full textarea-custom lm-bf-input", placeholder="Provide a brief overview of the e-book's contents, digital chapters, or study requirements...") }}
+                    </div>
+
+                    <!-- ===== SECTION: Files & Permissions ===== -->
+                    <div class="form-section-title">
+                        <i class="fas fa-file-pdf text-primary"></i> Digital Resources & Assets
+                    </div>
+
+                    <!-- PDF & Cover uploads side by side -->
+                    <div class="lm-bf-grid lm-bf-grid-2col lm-bf-upload-row">
+                        <div class="form-group">
+                            <label class="lm-bf-label">{{ form.pdf_file.label }}</label>
+                            {% if book and book.pdf_file %}
+                            <div class="current-file-note">
+                                <i class="fas fa-check-circle"></i>
+                                Current PDF ebook is saved. Upload a new PDF to replace it.
+                            </div>
+                            {% endif %}
+                            <div class="upload-zone lm-bf-upload-zone" onclick="document.getElementById('pdf_file').click()">
+                                <i class="fas fa-file-upload upload-icon"></i>
+                                <span class="upload-text-main" id="pdf-text">Click to upload PDF document</span>
+                                <span class="text-muted small">PDF format (Max 50MB recommended)</span>
+                            </div>
+                            {{ form.pdf_file(id="pdf_file", class="d-none") }}
+                        </div>
+                        <div class="form-group">
+                            <label class="lm-bf-label">{{ form.cover_image.label }}</label>
+                            {% if book and book.cover_image %}
+                            <div class="current-file-note">
+                                <i class="fas fa-check-circle"></i>
+                                Current cover image is saved. Upload a new image to replace it.
+                            </div>
+                            {% endif %}
+                            <div class="upload-zone lm-bf-upload-zone" onclick="document.getElementById('cover_image').click()">
+                                <i class="fas fa-image upload-icon"></i>
+                                <span class="upload-text-main" id="cover-text">Click to upload cover photo</span>
+                                <span class="text-muted small">WEBP, JPG or PNG (Ratio 3:4)</span>
+                            </div>
+                            {{ form.cover_image(id="cover_image", class="d-none") }}
+                        </div>
+                    </div>
+
+                    <!-- ===== SECTION: Copyright ===== -->
+                    <div class="form-section-title">
+                        <i class="fas fa-shield-halved text-primary"></i> Copyright Protection
+                    </div>
+
+                    <div class="copyright-protection-panel lm-bf-copyright">
+                        <p class="copyright-protection-note">
+                            <i class="fas fa-circle-info"></i>
+                            Allow Download and Online Read Only cannot be enabled at the same time.
+                        </p>
+                        <div class="copyright-toggle-grid">
+                            <label class="toggle-container copyright-toggle" id="toggle-read-only-wrap">
+                                {{ form.online_read_only(id="online_read_only") }}
+                                <div class="ms-2">
+                                    <div class="fw-bold text-dark">Online Read Only</div>
+                                    <div class="small text-muted">
+                                        Users may read in the browser only. Download, print, save, and direct PDF URLs are blocked.
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="toggle-container copyright-toggle" id="toggle-download-wrap">
+                                {{ form.allow_download(id="allow_download") }}
+                                <div class="ms-2">
+                                    <div class="fw-bold text-dark">Allow Download</div>
+                                    <div class="small text-muted">
+                                        Members may download the PDF when system-wide digital downloads are enabled.
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- ===== Actions ===== -->
+                    <div class="lm-bf-actions">
+                        <a href="{{ url_for('librarian.manage_books') }}" class="btn btn-ghost lm-bf-action-cancel">Discard</a>
+                        <button type="submit" class="btn btn-gold text-white lm-bf-action-save lm-bf-action-gold"
+                            onclick="return confirm('Confirm upload of this digital asset?')">
+                            <i class="fas fa-cloud-upload-alt me-2"></i> Upload Resource
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById("pdf_file").onchange = function() {
+        if(this.files.length > 0) {
+            document.getElementById("pdf-text").innerText = "✓ " + this.files[0].name;
+            document.getElementById("pdf-text").style.color = "#16a34a";
+        }
+    };
+    document.getElementById("cover_image").onchange = function() {
+        if(this.files.length > 0) {
+            document.getElementById("cover-text").innerText = "✓ " + this.files[0].name;
+            document.getElementById("cover-text").style.color = "#16a34a";
+        }
+    };
+
+    const readOnlyToggle = document.getElementById("online_read_only");
+    const downloadToggle = document.getElementById("allow_download");
+
+    function syncCopyrightToggles(changed) {
+        if (!readOnlyToggle || !downloadToggle) return;
+        if (changed === "read" && readOnlyToggle.checked) downloadToggle.checked = false;
+        if (changed === "download" && downloadToggle.checked) readOnlyToggle.checked = false;
+    }
+
+    if (readOnlyToggle) readOnlyToggle.addEventListener("change", () => syncCopyrightToggles("read"));
+    if (downloadToggle) downloadToggle.addEventListener("change", () => syncCopyrightToggles("download"));
+
+    if (readOnlyToggle && readOnlyToggle.checked) syncCopyrightToggles("read");
+    else if (downloadToggle && downloadToggle.checked) syncCopyrightToggles("download");
+</script>
+{% endblock %}

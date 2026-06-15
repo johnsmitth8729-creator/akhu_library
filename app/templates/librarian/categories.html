@@ -1,0 +1,198 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Categories | Al-Khwarizmi Smart Library{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/librarian.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="librarian-area">
+    <div class="container">
+
+        <!-- HEADER -->
+        <div class="lm-cat-header">
+            <div class="lm-cat-header-text">
+                <h1>Book Categories</h1>
+                <p class="text-muted">Organize your library collections by creating and managing catalog book categories.</p>
+            </div>
+            <a href="{{ url_for('librarian.dashboard') }}" class="btn btn-ghost lm-cat-back-btn">
+                <i class="fas fa-chevron-left"></i>
+                <span>Dashboard</span>
+            </a>
+        </div>
+
+        <div class="lm-cat-layout">
+
+            <!-- Left Side: Add Category Form -->
+            <aside class="lm-cat-form-col">
+                <div class="form-card lm-cat-form-card">
+                    <div class="lm-cat-form-head">
+                        <div class="lm-cat-form-icon">
+                            <i class="fas fa-plus-circle"></i>
+                        </div>
+                        <h2>Add Category</h2>
+                    </div>
+
+                    <form method="post" action="{{ url_for('librarian.manage_categories', q=q) }}">
+                        {{ form.hidden_tag() }}
+                        <div class="form-group">
+                            <label class="fw-bold mb-2">Category Name</label>
+                            {{ form.name(class="form-input-full", placeholder="e.g. Artificial Intelligence", required=True) }}
+                            {% for error in form.name.errors %}
+                                <span class="text-danger small fw-bold d-block mt-1">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        <button class="btn btn-primary lm-cat-submit-btn" type="submit">
+                            <i class="fas fa-plus-circle me-1"></i> Create Category
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Info Tip Card -->
+                <div class="info-tip-card lm-cat-tip-card">
+                    <i class="fas fa-lightbulb text-warning me-2" style="font-size: 1.1rem;"></i>
+                    <strong class="text-dark">Why categories matter?</strong>
+                    <div class="mt-2 text-muted" style="line-height: 1.6;">
+                        Structuring resources into categories helps students and faculty easily discover digital textbooks, research assets, and library novels.
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Right Side: Existing Categories -->
+            <div class="lm-cat-list-col">
+                <div class="data-card lm-cat-data-card">
+                    <!-- Card header row: title + count badge -->
+                    <div class="lm-cat-card-header">
+                        <h2 class="lm-cat-card-title">Existing Catalog Categories</h2>
+                        <span class="lm-cat-count-badge">
+                            {% if q %}{{ categories|length }} Results{% else %}{{ categories|length }} Total{% endif %}
+                        </span>
+                    </div>
+
+                    <!-- Search bar -->
+                    <div class="librarian-search-panel">
+                        <form method="get" action="{{ url_for('librarian.manage_categories') }}" class="lm-cat-search-form">
+                            <div class="librarian-search-input lm-cat-search-input">
+                                <i class="fas fa-search"></i>
+                                <input type="text" name="q" value="{{ q or '' }}" placeholder="Search categories...">
+                            </div>
+                            <div class="lm-cat-search-actions">
+                                <button type="submit" class="btn btn-primary lm-cat-search-btn">
+                                    <i class="fas fa-filter"></i>
+                                    <span>Search</span>
+                                </button>
+                                {% if q %}
+                                <a href="{{ url_for('librarian.manage_categories') }}" class="btn btn-ghost lm-cat-reset-btn">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Desktop table -->
+                    <div class="table-responsive lm-cat-desktop-table">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Category Name</th>
+                                    <th class="text-center" style="width: 160px;">Associated Books</th>
+                                    <th class="text-end" style="width: 80px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for c in categories %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="lm-cat-row-icon">
+                                                <i class="fas fa-tag"></i>
+                                            </div>
+                                            <span class="fw-bold text-dark">{{ c.name }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge-custom physical">
+                                            <i class="fas fa-book me-1"></i> {{ c.books|length }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <form method="post" action="{{ url_for('librarian.category_delete', category_id=c.id, q=q) }}" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                            <button class="btn btn-ghost btn-sm text-danger lm-table-action-btn" type="submit"
+                                                onclick="return confirm('Delete this category? Books linked to it will have their catalog grouping reset.')"
+                                                title="Delete">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center py-5">
+                                        <div class="empty-state-container">
+                                            <div class="empty-state-icon" style="background: rgba(11, 59, 111, 0.05); color: var(--royal);">
+                                                <i class="fas fa-tags"></i>
+                                            </div>
+                                            {% if q %}
+                                            <h3>No categories found</h3>
+                                            <p>No categories match your search query.</p>
+                                            {% else %}
+                                            <h3>No categories yet</h3>
+                                            <p>No catalog categories have been defined yet. Get started by creating one.</p>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Mobile card list -->
+                    <div class="lm-cat-mobile-list">
+                        {% for c in categories %}
+                        <div class="lm-cat-item">
+                            <div class="lm-cat-item-icon">
+                                <i class="fas fa-tag"></i>
+                            </div>
+                            <div class="lm-cat-item-info">
+                                <span class="lm-cat-item-name">{{ c.name }}</span>
+                                <span class="lm-cat-item-count">
+                                    <i class="fas fa-book"></i>
+                                    {{ c.books|length }} book{{ 's' if c.books|length != 1 else '' }}
+                                </span>
+                            </div>
+                            <form method="post" action="{{ url_for('librarian.category_delete', category_id=c.id, q=q) }}" class="lm-cat-item-delete">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button class="lm-cat-delete-btn" type="submit"
+                                    onclick="return confirm('Delete this category? Books linked to it will have their catalog grouping reset.')"
+                                    title="Delete {{ c.name }}">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </form>
+                        </div>
+                        {% else %}
+                        <div class="lm-cat-empty">
+                            <div class="lm-cat-empty-icon">
+                                <i class="fas fa-tags"></i>
+                            </div>
+                            {% if q %}
+                            <p class="lm-cat-empty-title">No categories found</p>
+                            <p class="lm-cat-empty-sub">No categories match "{{ q }}"</p>
+                            {% else %}
+                            <p class="lm-cat-empty-title">No categories yet</p>
+                            <p class="lm-cat-empty-sub">Create your first category using the form above.</p>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

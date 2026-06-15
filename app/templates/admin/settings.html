@@ -1,0 +1,234 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}System Settings | Admin Panel{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="section-header row-between">
+        <div>
+            <h1>System Settings</h1>
+            <p class="muted">Configure global platform properties, circulation rules, fines, and request governance.</p>
+        </div>
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-ghost">Back to Dashboard</a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div style="margin-top: 20px;">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'error' else 'danger' }}" style="border-radius: 14px; padding: 14px 20px; font-weight: 500;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('admin.settings') }}" style="margin-top: 24px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div style="display: grid; grid-template-columns: 1fr; gap: 24px;">
+            <div class="card glass" style="padding: 30px;">
+                <div style="border-bottom: 1px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 20px;">
+                    <h2 style="font-size: 1.4rem; color: var(--navy); display: flex; align-items: center; gap: 10px;">
+                        General Library Configuration
+                    </h2>
+                    <p class="small muted">Primary identity information of the smart library portal.</p>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label class="form-label" style="font-weight: 600; color: var(--navy);">Library Title Name</label>
+                    <input type="text" name="library_name" value="{{ settings.library_name.value }}" class="form-input" required>
+                    <span class="small muted" style="margin-top: 6px; display: block;">{{ settings.library_name.description }}</span>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label class="form-label" style="font-weight: 600; color: var(--navy);">Hero Quote Text</label>
+                    <textarea name="hero_quote_text" class="form-input" required rows="2">{{ settings.hero_quote_text.value if settings.hero_quote_text else '' }}</textarea>
+                    <span class="small muted" style="margin-top: 6px; display: block;">{{ settings.hero_quote_text.description if settings.hero_quote_text else '' }}</span>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" style="font-weight: 600; color: var(--navy);">Hero Quote Author</label>
+                    <input type="text" name="hero_quote_author" value="{{ settings.hero_quote_author.value if settings.hero_quote_author else '' }}" class="form-input" required>
+                    <span class="small muted" style="margin-top: 6px; display: block;">{{ settings.hero_quote_author.description if settings.hero_quote_author else '' }}</span>
+                </div>
+            </div>
+
+            <div class="card glass" style="padding: 30px;">
+                <div style="border-bottom: 1px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 20px;">
+                    <h2 style="font-size: 1.4rem; color: var(--navy); display: flex; align-items: center; gap: 10px;">
+                        Circulation & Overdue Fines
+                    </h2>
+                    <p class="small muted">Manage book lending constraints and daily penalization rates.</p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                    <div class="form-group">
+                        <label class="form-label" style="font-weight: 600; color: var(--navy);">Default Loan Duration (Days)</label>
+                        <input type="number" name="default_borrow_days" value="{{ settings.default_borrow_days.value }}" class="form-input" min="1" max="365" required>
+                        <span class="small muted" style="margin-top: 6px; display: block;">{{ settings.default_borrow_days.description }}</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" style="font-weight: 600; color: var(--navy);">Max Active Borrows per Student</label>
+                        <input type="number" name="max_active_borrows" value="{{ settings.max_active_borrows.value }}" class="form-input" min="1" max="50" required>
+                        <span class="small muted" style="margin-top: 6px; display: block;">{{ settings.max_active_borrows.description }}</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" style="font-weight: 600; color: var(--navy);">Late Return Fine Rate (UZS/day)</label>
+                        <input type="number" name="late_fine_per_day" value="{{ settings.late_fine_per_day.value }}" class="form-input" min="0" required>
+                        <span class="small muted" style="margin-top: 6px; display: block;">{{ settings.late_fine_per_day.description }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card glass" style="padding: 30px;">
+                <div style="border-bottom: 1px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 20px;">
+                    <h2 style="font-size: 1.4rem; color: var(--navy); display: flex; align-items: center; gap: 10px;">
+                        Security & Access Control
+                    </h2>
+                    <p class="small muted">Manage portal privacy parameters and registration modes.</p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                    <div class="form-group">
+                        <label class="form-label" style="font-weight: 600; color: var(--navy);">Allow Public Registration</label>
+                        <select name="allow_registration" class="form-select" style="height: auto;">
+                            <option value="True" {% if settings.allow_registration.value == 'True' %}selected{% endif %}>Enabled (Allow public sign-ups)</option>
+                            <option value="False" {% if settings.allow_registration.value == 'False' %}selected{% endif %}>Disabled (Admin pre-creation only)</option>
+                        </select>
+                        <span class="small muted" style="margin-top: 6px; display: block;">{{ settings.allow_registration.description }}</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" style="font-weight: 600; color: var(--navy);">Digital PDF Downloads</label>
+                        <select name="allow_digital_downloads" class="form-select" style="height: auto;">
+                            <option value="True" {% if settings.allow_digital_downloads.value == 'True' %}selected{% endif %}>Enabled (Allow PDF download buttons)</option>
+                            <option value="False" {% if settings.allow_digital_downloads.value == 'False' %}selected{% endif %}>Disabled (Read-only mode globally)</option>
+                        </select>
+                        <span class="small muted" style="margin-top: 6px; display: block;">{{ settings.allow_digital_downloads.description }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card glass" style="padding: 30px;">
+                <div style="border-bottom: 1px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 20px;">
+                    <h2 style="font-size: 1.4rem; color: var(--navy); display: flex; align-items: center; gap: 10px;">
+                        Request Governance
+                    </h2>
+                    <p class="small muted">Control request volume, waiting-list capacity, and fine-based borrowing restrictions.</p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                    <div class="form-group">
+                        <label class="form-label" style="font-weight: 600; color: var(--navy);">Daily Request Limit</label>
+                        <input type="number" name="daily_request_limit" value="{{ settings.daily_request_limit.value }}" class="form-input" min="1" max="100" required>
+                        <span class="small muted" style="margin-top: 6px; display: block;">{{ settings.daily_request_limit.description }}</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" style="font-weight: 600; color: var(--navy);">Max Waiting List Requests</label>
+                        <input type="number" name="max_waiting_list_requests" value="{{ settings.max_waiting_list_requests.value }}" class="form-input" min="1" max="50" required>
+                        <span class="small muted" style="margin-top: 6px; display: block;">{{ settings.max_waiting_list_requests.description }}</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" style="font-weight: 600; color: var(--navy);">Block Users with Unpaid Fines</label>
+                        <select name="block_unpaid_fines" class="form-select" style="height: auto;">
+                            <option value="True" {% if settings.block_unpaid_fines.value == 'True' %}selected{% endif %}>Enabled (Require fine settlement first)</option>
+                            <option value="False" {% if settings.block_unpaid_fines.value == 'False' %}selected{% endif %}>Disabled (Allow requests despite fines)</option>
+                        </select>
+                        <span class="small muted" style="margin-top: 6px; display: block;">{{ settings.block_unpaid_fines.description }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card glass" style="padding: 30px;">
+                <div style="border-bottom: 1px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 20px;">
+                    <h2 style="font-size: 1.4rem; color: var(--navy); display: flex; align-items: center; gap: 10px;">
+                        Site Announcement Settings
+                    </h2>
+                    <p class="small muted">Configure the global scrolling notification banner text, style, and icon.</p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                    <div class="form-group">
+                        <label class="form-label" style="font-weight: 600; color: var(--navy);">Enable Banner</label>
+                        <select name="banner_enabled" class="form-select" style="height: auto;">
+                            <option value="True" {% if banner.enabled %}selected{% endif %}>ON (Show banner)</option>
+                            <option value="False" {% if not banner.enabled %}selected{% endif %}>OFF (Hide banner)</option>
+                        </select>
+                        <span class="small muted" style="margin-top: 6px; display: block;">Turn the global scrolling banner ON or OFF.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" style="font-weight: 600; color: var(--navy);">Banner Type</label>
+                        <select name="banner_type" class="form-select" style="height: auto;">
+                            <option value="info" {% if banner.banner_type == 'info' %}selected{% endif %}>Information (Blue)</option>
+                            <option value="warning" {% if banner.banner_type == 'warning' %}selected{% endif %}>Warning (Yellow)</option>
+                            <option value="success" {% if banner.banner_type == 'success' %}selected{% endif %}>Success (Green)</option>
+                            <option value="danger" {% if banner.banner_type == 'danger' %}selected{% endif %}>Danger (Red)</option>
+                        </select>
+                        <span class="small muted" style="margin-top: 6px; display: block;">Color scheme and style of the banner.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" style="font-weight: 600; color: var(--navy);">Scrolling Speed</label>
+                        <select name="scroll_speed" class="form-select" style="height: auto;">
+                            <option value="slow" {% if banner.scroll_speed == 'slow' %}selected{% endif %}>Slow</option>
+                            <option value="normal" {% if banner.scroll_speed == 'normal' %}selected{% endif %}>Normal</option>
+                            <option value="fast" {% if banner.scroll_speed == 'fast' %}selected{% endif %}>Fast</option>
+                        </select>
+                        <span class="small muted" style="margin-top: 6px; display: block;">How fast the marquee text scrolls.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" style="font-weight: 600; color: var(--navy);">Banner Icon</label>
+                        <input type="text" name="banner_icon" value="{{ banner.banner_icon or '' }}" class="form-input" placeholder="e.g. ⚠️, ℹ️, 📢">
+                        <span class="small muted" style="margin-top: 6px; display: block;">Optional emoji or icon character shown at the start.</span>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" style="font-weight: 600; color: var(--navy);">Banner Text</label>
+                    <textarea name="banner_text" class="form-input" rows="2" placeholder="Enter notification message here...">{{ banner.banner_text or '' }}</textarea>
+                    <span class="small muted" style="margin-top: 6px; display: block;">This text will scroll continuously across the entire site.</span>
+                </div>
+            </div>
+
+            <div class="card glass" style="padding: 30px;">
+                <div style="border-bottom: 1px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 20px;">
+                    <h2 style="font-size: 1.4rem; color: var(--navy); display: flex; align-items: center; gap: 10px;">
+                        Homepage Announcement Settings
+                    </h2>
+                    <p class="small muted">Control active library events, campaigns, and news highlights.</p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; align-items: flex-start;">
+                    <div class="form-group">
+                        <label class="form-label" style="font-weight: 600; color: var(--navy);">Enable Homepage Announcements</label>
+                        <select name="homepage_announcements_enabled" class="form-select" style="height: auto;">
+                            <option value="True" {% if settings.homepage_announcements_enabled.value == 'True' %}selected{% endif %}>Enabled (Show announcement section)</option>
+                            <option value="False" {% if settings.homepage_announcements_enabled.value == 'False' %}selected{% endif %}>Disabled (Hide announcement section completely)</option>
+                        </select>
+                        <span class="small muted" style="margin-top: 6px; display: block;">{{ settings.homepage_announcements_enabled.description }}</span>
+                    </div>
+
+                    <div style="padding-top: 28px;">
+                        <a href="{{ url_for('admin.manage_announcements') }}" class="btn btn-primary" style="display: inline-block; text-align: center; text-decoration: none; padding: 12px 24px; font-weight: 600; border-radius: 12px;">
+                            ⚙️ Manage Homepage Announcements
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 30px; display: flex; gap: 16px; justify-content: flex-end;">
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-ghost" style="padding: 12px 24px;">Cancel Changes</a>
+            <button type="submit" class="btn btn-primary" style="padding: 12px 36px; font-weight: 600;">Save All Configurations</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

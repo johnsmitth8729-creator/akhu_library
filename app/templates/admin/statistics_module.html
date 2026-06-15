@@ -1,0 +1,197 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}{{ page_title }} | Admin Panel{% endblock %}
+
+{% block content %}
+<section class="admin-dashboard-page admin-statistics-page">
+    <div class="section-header row-between">
+        <div>
+            <span class="eyebrow">Analytics Module</span>
+            <h1>{{ page_title }}</h1>
+            <p class="muted">{{ description }}</p>
+        </div>
+        <div class="header-actions">
+            <a href="{{ url_for('admin.statistics') }}" class="btn btn-ghost">
+                <i class="fas fa-arrow-left"></i> Analytics Center
+            </a>
+            <a href="{{ url_for(export_url, export='csv', q=filters.q if filters.q else None, faculty=filters.faculty if filters.faculty else None, group=filters.group if filters.group else None, category=filters.category if filters.category else None, sort=filters.sort, direction=filters.direction, per_page=filters.per_page) }}" class="btn btn-primary">
+                <i class="fas fa-file-csv"></i> Export CSV
+            </a>
+            <a href="{{ url_for(export_url, export='excel', q=filters.q if filters.q else None, faculty=filters.faculty if filters.faculty else None, group=filters.group if filters.group else None, category=filters.category if filters.category else None, sort=filters.sort, direction=filters.direction, per_page=filters.per_page) }}" class="btn btn-ghost">
+                <i class="fas fa-file-excel"></i> Export Excel
+            </a>
+        </div>
+    </div>
+
+    <div class="card glass admin-users-search-card mb-4">
+        <form method="get" action="{{ url_for(export_url) }}" class="filters-form admin-users-search">
+            <div class="search-shell">
+                <i class="fas fa-search"></i>
+                <input type="text" name="q" value="{{ filters.q or '' }}" class="form-input" placeholder="Search this dataset..." aria-label="Search">
+            </div>
+
+            {% if filters.faculties %}
+            <select name="faculty" class="form-select" aria-label="Filter by faculty">
+                <option value="">All Faculties</option>
+                {% for faculty in filters.faculties %}
+                <option value="{{ faculty.name }}" {% if filters.faculty == faculty.name %}selected{% endif %}>{{ faculty.name }}</option>
+                {% endfor %}
+            </select>
+            {% endif %}
+
+            {% if filters.groups %}
+            <select name="group" class="form-select" aria-label="Filter by group">
+                <option value="">All Groups</option>
+                {% for group in filters.groups %}
+                <option value="{{ group }}" {% if filters.group == group %}selected{% endif %}>{{ group }}</option>
+                {% endfor %}
+            </select>
+            {% endif %}
+
+            {% if filters.categories %}
+            <select name="category" class="form-select" aria-label="Filter by category">
+                <option value="">All Categories</option>
+                {% for category in filters.categories %}
+                <option value="{{ category.name }}" {% if filters.category == category.name %}selected{% endif %}>{{ category.name }}</option>
+                {% endfor %}
+            </select>
+            {% endif %}
+
+            <input type="hidden" name="sort" value="{{ filters.sort or 'score' }}">
+            <input type="hidden" name="direction" value="{{ filters.direction or 'desc' }}">
+            <input type="hidden" name="per_page" value="{{ filters.per_page or 20 }}">
+
+            <div class="search-actions-row">
+                <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+                {% if filters.q or filters.faculty or filters.group or filters.category %}
+                <a href="{{ url_for(export_url) }}" class="btn btn-ghost btn-sm">Reset</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <div class="analytics-table-card">
+        <div class="table-summary">
+            <div>
+                {% if pagination and pagination.total %}
+                    <span class="muted">Showing {{ pagination.start_index }}–{{ pagination.end_index }} of {{ pagination.total }} records</span>
+                {% else %}
+                    <span class="muted">No records available for this module.</span>
+                {% endif %}
+            </div>
+            <div class="table-actions">
+                <a href="{{ url_for(export_url, export='csv', q=filters.q if filters.q else None, faculty=filters.faculty if filters.faculty else None, group=filters.group if filters.group else None, category=filters.category if filters.category else None, sort=filters.sort, direction=filters.direction, per_page=filters.per_page) }}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-file-csv"></i>
+                    Export CSV
+                </a>
+                <a href="{{ url_for(export_url, export='excel', q=filters.q if filters.q else None, faculty=filters.faculty if filters.faculty else None, group=filters.group if filters.group else None, category=filters.category if filters.category else None, sort=filters.sort, direction=filters.direction, per_page=filters.per_page) }}" class="btn btn-sm btn-ghost">
+                    <i class="fas fa-file-excel"></i>
+                    Export Excel
+                </a>
+            </div>
+        </div>
+
+        {% macro sort_link(column_key, label) -%}
+            {%- set current_sort = filters.sort or '' -%}
+            {%- set current_direction = filters.direction or 'desc' -%}
+            {%- set next_direction = 'asc' if current_sort == column_key and current_direction == 'desc' else 'desc' -%}
+            <a class="sort-link" href="{{ url_for(export_url, q=filters.q if filters.q else None, faculty=filters.faculty if filters.faculty else None, group=filters.group if filters.group else None, category=filters.category if filters.category else None, sort=column_key, direction=next_direction, page=1, per_page=filters.per_page) }}">
+                {{ label }}
+                {% if current_sort == column_key %}
+                    <span class="sort-indicator">{{ '↓' if current_direction == 'desc' else '↑' }}</span>
+                {% endif %}
+            </a>
+        {%- endmacro %}
+
+        {% set numeric_keys = ['score', 'borrow_score', 'competition_score', 'rating', 'borrows', 'views', 'reads', 'favorites', 'reviews', 'approved_requests', 'returned_books', 'active_borrowings', 'overdue_books', 'competitions_joined', 'request_count', 'certificates', 'bronze_medals', 'silver_medals', 'gold_medals', 'champion_positions', 'pages_read'] %}
+
+        {% if rows %}
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            {% for col in columns %}
+                                <th>{{ sort_link(col.key, col.label) }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                            {% set rank = (pagination.start_index if pagination else 0) + loop.index0 %}
+                            <tr>
+                                <td data-label="Rank">
+                                    {% if rank == 1 %}
+                                        <span class="rank-badge gold">🥇 Rank 1</span>
+                                    {% elif rank == 2 %}
+                                        <span class="rank-badge silver">🥈 Rank 2</span>
+                                    {% elif rank == 3 %}
+                                        <span class="rank-badge bronze">🥉 Rank 3</span>
+                                    {% else %}
+                                        <span class="rank-badge default">{{ rank }}</span>
+                                    {% endif %}
+                                </td>
+                                {% for col in columns %}
+                                    <td data-label="{{ col.label }}" class="{% if col.key in numeric_keys %}text-right{% endif %}">
+                                        {% if col.key == 'name' and row.username %}
+                                            <div class="user-card">
+                                                <span class="avatar-circle-sm">{{ row.username[:2]|upper }}</span>
+                                                <div>
+                                                    <strong>{{ row.name }}</strong>
+                                                    <div class="small muted">{{ row.username }}</div>
+                                                </div>
+                                            </div>
+                                        {% elif col.key == 'title' %}
+                                            <div class="book-info-cell">
+                                                <div class="book-cover-placeholder">{{ row.title[:2]|upper }}</div>
+                                                <div>
+                                                    <strong>{{ row.title }}</strong>
+                                                    {% if row.author %}
+                                                        <div class="small muted">{{ row.author }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        {% elif col.key in ['score', 'borrow_score', 'competition_score'] %}
+                                            {% set value = row[col.key] %}
+                                            {% set numeric = value|float %}
+                                            <span class="score-badge {{ 'high' if numeric >= 75 else 'medium' if numeric >= 40 else 'low' }}">{{ value }}</span>
+                                        {% elif col.key == 'rating' %}
+                                            <span class="score-badge {{ 'high' if row[col.key]|float >= 4.0 else 'medium' if row[col.key]|float >= 2.5 else 'low' }}">{{ row[col.key] }}</span>
+                                        {% elif col.key in ['certificates', 'bronze_medals', 'silver_medals', 'gold_medals', 'approved_requests', 'returned_books', 'active_borrowings', 'overdue_books', 'borrows', 'views', 'reads', 'favorites', 'reviews', 'pages_read', 'competitions_joined', 'request_count', 'champion_positions'] %}
+                                            <span class="badge badge-blue">{{ row[col.key] }}</span>
+                                        {% else %}
+                                            {{ row[col.key] if row[col.key] is not none else '—' }}
+                                        {% endif %}
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if pagination.pages > 1 %}
+            <div class="pagination-wrapper">
+                {% if pagination.has_prev %}
+                    <a href="{{ url_for(export_url, page=pagination.prev_num, q=filters.q if filters.q else None, faculty=filters.faculty if filters.faculty else None, group=filters.group if filters.group else None, category=filters.category if filters.category else None, sort=filters.sort, direction=filters.direction, per_page=filters.per_page) }}" class="btn btn-ghost btn-sm">← Previous</a>
+                {% else %}
+                    <span></span>
+                {% endif %}
+                <span class="page-info">Page <strong>{{ pagination.page }}</strong> of {{ pagination.pages }}</span>
+                {% if pagination.has_next %}
+                    <a href="{{ url_for(export_url, page=pagination.next_num, q=filters.q if filters.q else None, faculty=filters.faculty if filters.faculty else None, group=filters.group if filters.group else None, category=filters.category if filters.category else None, sort=filters.sort, direction=filters.direction, per_page=filters.per_page) }}" class="btn btn-ghost btn-sm">Next →</a>
+                {% else %}
+                    <span></span>
+                {% endif %}
+            </div>
+            {% endif %}
+        {% else %}
+            <div class="empty-table-state">
+                <span>📊</span>
+                <h3>No analytics data available yet.</h3>
+                <p class="muted">Try broadening your filters or returning later when more data is available.</p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

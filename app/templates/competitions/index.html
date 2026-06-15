@@ -1,0 +1,89 @@
+{% extends "layouts/base.html" %}
+{% block title %}Reading Competitions{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/competition.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="comp-page-wrapper">
+    <div class="comp-page-hero">
+        <div class="comp-page-hero-content">
+            <span class="hero-eyebrow"><i class="fas fa-trophy"></i> AKHU Library</span>
+            <h1>Reading Competitions</h1>
+            <p>Join active reading challenges, complete quizzes, and follow your position on the leaderboard.</p>
+
+            <div class="comp-user-stats mt-4">
+                <span class="comp-user-stat-pill">
+                    <span class="pill-icon blue"><i class="fas fa-door-open"></i></span>
+                    <span><span class="pill-value">{{ stats.joined if stats else 0 }}</span><br><small class="muted">Joined</small></span>
+                </span>
+                <span class="comp-user-stat-pill">
+                    <span class="pill-icon green"><i class="fas fa-circle-check"></i></span>
+                    <span><span class="pill-value">{{ stats.completed if stats else 0 }}</span><br><small class="muted">Completed</small></span>
+                </span>
+                <span class="comp-user-stat-pill">
+                    <span class="pill-icon gold"><i class="fas fa-award"></i></span>
+                    <span><span class="pill-value">{{ stats.badges if stats else 0 }}</span><br><small class="muted">Badges</small></span>
+                </span>
+            </div>
+
+            {% if current_user.is_staff %}
+            <div class="toolbar-group mt-3">
+                <a href="{{ url_for('competitions.manage_list') }}" class="btn btn-gold">
+                    <i class="fas fa-sliders"></i> Manage competitions
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="comp-cards-grid">
+        {% for item in items %}
+            {% set competition = item.competition %}
+            {% set status = competition.lifecycle_status %}
+
+            <article class="comp-card-v2">
+                <div class="comp-card-v2-header">
+                    <span class="card-status-badge {{ status }}">
+                        <i class="fas fa-circle"></i> {{ status|title }}
+                    </span>
+                    <h3 class="mt-2">{{ competition.title }}</h3>
+                </div>
+
+                <div class="comp-card-v2-body">
+                    <p class="comp-card-v2-desc">
+                        {{ competition.description|truncate(150) if competition.description else 'University reading challenge' }}
+                    </p>
+                    <div class="comp-card-v2-meta">
+                        <div class="comp-card-v2-meta-row">
+                            <i class="fas fa-calendar"></i>
+                            {{ competition.start_date.strftime('%d %b %Y') }} - {{ competition.end_date.strftime('%d %b %Y') }}
+                        </div>
+                        <div class="comp-card-v2-meta-row">
+                            <i class="fas fa-clock"></i>
+                            {% if competition.time_limit_minutes %}{{ competition.time_limit_minutes }} min{% else %}No time limit{% endif %}
+                        </div>
+                        <div class="comp-card-v2-meta-row">
+                            <i class="fas fa-list-check"></i>
+                            {{ competition.question_count }} questions
+                        </div>
+                    </div>
+
+                    <div class="comp-card-v2-best">
+                        <span class="best-label">Your best</span>
+                        <span class="best-value">{% if item.best %}{{ item.best.percentage }}%{% else %}-{% endif %}</span>
+                    </div>
+                </div>
+
+                <div class="comp-card-v2-footer">
+                    <a href="{{ url_for('competitions.detail', competition_id=competition.id) }}" class="btn btn-primary w-100">
+                        <i class="fas fa-arrow-right"></i> Open competition
+                    </a>
+                </div>
+            </article>
+        {% else %}
+            <div class="empty-box">No competitions are available right now.</div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,172 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Import Users | Librarian Panel{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/librarian.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="librarian-area">
+    <div class="container">
+
+        <!-- HERO HEADER -->
+        <div class="lm-import-hero lm-import-hero-responsive">
+            <div class="lm-import-hero-content">
+                <span class="lm-import-eyebrow">
+                    <i class="fas fa-user-plus"></i>
+                    Bulk account setup
+                </span>
+                <h1>Import Users</h1>
+                <p>Upload an Excel file to create many user accounts (role: User) at once.</p>
+            </div>
+            <a href="{{ back_url }}" class="btn btn-ghost lm-import-back">
+                <i class="fas fa-chevron-left"></i>
+                <span>Back to Users</span>
+            </a>
+        </div>
+
+        <div class="lm-split-layout lm-import-split">
+            <!-- Upload form -->
+            <div class="data-card lm-import-card lm-import-form-card">
+                <div class="lm-panel-head">
+                    <div class="lm-panel-icon"><i class="fas fa-file-import"></i></div>
+                    <div>
+                        <h2>Upload Spreadsheet</h2>
+                        <p>Choose the faculty, set a default password, then upload your Excel file to preview.</p>
+                    </div>
+                </div>
+
+                <form method="post" enctype="multipart/form-data" id="importForm">
+                    {{ form.hidden_tag() }}
+                    <input type="hidden" name="source" value="{{ source }}">
+
+                    <!-- Faculty -->
+                    <div class="form-group lm-import-field">
+                        <label class="fw-bold mb-2">{{ form.faculty_id.label }}</label>
+                        {{ form.faculty_id(class="form-input-full form-select-full lm-import-input") }}
+                        <p class="text-muted small mt-2 mb-0">All imported users will be assigned to this faculty.</p>
+                    </div>
+
+                    <!-- Default password -->
+                    <div class="form-group lm-import-field">
+                        <label class="fw-bold mb-2">{{ form.default_password.label }}</label>
+                        {{ form.default_password(class="form-input-full lm-import-input", placeholder="e.g. Akhu2026!") }}
+                        {% for error in form.default_password.errors %}
+                            <span class="text-danger small d-block mt-2">{{ error }}</span>
+                        {% endfor %}
+                        <p class="text-muted small mt-2 mb-0">All imported users will receive this default password initially.</p>
+                    </div>
+
+                    <!-- File upload -->
+                    <div class="form-group lm-import-field">
+                        <label class="fw-bold mb-2">{{ form.excel_file.label }}</label>
+                        <div class="lm-file-upload-wrap">
+                            <label class="lm-file-upload d-block mb-0" for="excel_file" id="excelDropZone">
+                                <i class="fas fa-cloud-upload-alt d-block"></i>
+                                <strong id="excelUploadLabel">Click to choose Excel file</strong>
+                                <span>or drag and drop here (.xlsx, .xls)</span>
+                            </label>
+                            {{ form.excel_file(class="d-none", id="excel_file", accept=".xlsx,.xls") }}
+                            <div class="lm-file-name" id="excelFileName"></div>
+                        </div>
+                        {% for error in form.excel_file.errors %}
+                            <span class="text-danger small d-block mt-2">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+
+                    <button type="submit" class="btn btn-gold text-white fw-bold w-100 lm-import-submit">
+                        <i class="fas fa-search me-2"></i> Upload and Preview
+                    </button>
+                </form>
+            </div>
+
+            <!-- Guide aside -->
+            <aside class="lm-guide-card lm-import-guide lm-import-guide-responsive">
+                <div class="lm-guide-title">
+                    <i class="fas fa-table"></i>
+                    Expected Excel Format
+                </div>
+                <p class="text-muted mb-0" style="font-size: 0.9rem; line-height: 1.55;">
+                    The first row must contain column headers. Required columns:
+                </p>
+                <div class="lm-format-table-wrap">
+                    <table class="lm-format-table">
+                        <thead>
+                            <tr>
+                                <th>Full Name</th>
+                                <th>Email Address</th>
+                                <th>Phone Number</th>
+                                <th>Group</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Ali Valiyev</td>
+                                <td>ali.valiyev@university.uz</td>
+                                <td>998901112233</td>
+                                <td>221-22</td>
+                            </tr>
+                            <tr>
+                                <td>Hasan Karimov</td>
+                                <td>hasan.karimov@university.uz</td>
+                                <td>998901112244</td>
+                                <td>221-22</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <ul class="lm-hint-list">
+                    <li><i class="fas fa-check-circle"></i> Accepted formats: <strong>.xlsx</strong> and <strong>.xls</strong></li>
+                    <li><i class="fas fa-check-circle"></i> Usernames are generated automatically</li>
+                    <li><i class="fas fa-check-circle"></i> Duplicate phone numbers are skipped in the report</li>
+                </ul>
+            </aside>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    const input = document.getElementById("excel_file");
+    const fileName = document.getElementById("excelFileName");
+    const dropZone = document.getElementById("excelDropZone");
+    const label = document.getElementById("excelUploadLabel");
+
+    if (!input || !dropZone) return;
+
+    function showFile(file) {
+        if (!file) return;
+        fileName.textContent = "Selected: " + file.name;
+        label.textContent = "File ready — click to change";
+    }
+
+    input.addEventListener("change", function () {
+        if (this.files && this.files[0]) showFile(this.files[0]);
+    });
+
+    ["dragenter", "dragover"].forEach(function (eventName) {
+        dropZone.addEventListener(eventName, function (e) {
+            e.preventDefault();
+            dropZone.classList.add("is-dragover");
+        });
+    });
+
+    ["dragleave", "drop"].forEach(function (eventName) {
+        dropZone.addEventListener(eventName, function (e) {
+            e.preventDefault();
+            dropZone.classList.remove("is-dragover");
+        });
+    });
+
+    dropZone.addEventListener("drop", function (e) {
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            input.files = e.dataTransfer.files;
+            showFile(e.dataTransfer.files[0]);
+        }
+    });
+})();
+</script>
+{% endblock %}

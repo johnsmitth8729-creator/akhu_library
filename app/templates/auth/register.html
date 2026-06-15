@@ -1,0 +1,79 @@
+{% extends "layouts/base.html" %}
+{% block title %}Create account{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card auth-card-wide university-auth-card">
+        <div class="auth-header">
+            <div class="auth-logo gold">
+                <i class="fas fa-university"></i>
+            </div>
+            <h1>Join the Smart Library</h1>
+            <p>Create your university library account with academic details for faster borrowing and librarian support.</p>
+        </div>
+
+        <form method="post" class="auth-form">
+            {{ form.hidden_tag() }}
+
+            <div class="auth-form-grid">
+                <div class="form-group">
+                    <label>{{ form.fullname.label }}</label>
+                    {{ form.fullname(class="form-input", placeholder="John Doe") }}
+                    {% for error in form.fullname.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label>{{ form.username.label }}</label>
+                    {{ form.username(class="form-input", placeholder="johndoe") }}
+                    {% for error in form.username.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label>{{ form.email.label }}</label>
+                    {{ form.email(class="form-input", placeholder="student@university.uz") }}
+                    {% for error in form.email.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label>{{ form.phone_number.label }}</label>
+                    {{ form.phone_number(class="form-input", placeholder="+998 90 123 45 67") }}
+                    {% for error in form.phone_number.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label>{{ form.faculty_id.label }}</label>
+                    {{ form.faculty_id(class="form-input") }}
+                    {% for error in form.faculty_id.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label>{{ form.group_name.label }}</label>
+                    {{ form.group_name(class="form-input", placeholder="CS-101") }}
+                    {% for error in form.group_name.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>{{ form.password.label }}</label>
+                {{ form.password(class="form-input", placeholder="At least 8 characters") }}
+                {% for error in form.password.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+            </div>
+
+            <div class="form-group">
+                <label>{{ form.confirm.label }}</label>
+                {{ form.confirm(class="form-input", placeholder="Repeat password") }}
+                {% for error in form.confirm.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+            </div>
+
+            <button class="btn-auth btn-gold-auth" type="submit">
+                <i class="fas fa-user-check"></i>
+                Create account
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p class="muted">Already a member? <a href="{{ url_for('auth.login') }}">Sign in</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

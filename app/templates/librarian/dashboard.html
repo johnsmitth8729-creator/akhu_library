@@ -1,0 +1,255 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Librarian Dashboard | Al-Khwarizmi Smart Library{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/librarian.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="librarian-area lm-dashboard">
+    <div class="container">
+
+        <header class="lm-dash-hero">
+            <div>
+                <span class="lm-dash-eyebrow">Librarian workspace</span>
+                <h1>Dashboard</h1>
+                <p>Overview, quick tasks, and catalog insights — each action appears once.</p>
+            </div>
+        </header>
+
+        <div class="stats-grid lm-dash-kpis">
+            <a class="stat-card stat-card-link" href="{{ url_for('librarian.manage_requests', status='Pending') }}">
+                <div class="stat-header">
+                    <span>Pending requests</span>
+                    <div class="stat-icon"><i class="fas fa-inbox"></i></div>
+                </div>
+                <strong>{{ stats.pending_requests }}</strong>
+                <span class="stat-foot">Review &amp; approve</span>
+            </a>
+            <a class="stat-card stat-card-link" href="{{ url_for('librarian.manage_borrowings', status='Borrowed') }}">
+                <div class="stat-header">
+                    <span>Active loans</span>
+                    <div class="stat-icon"><i class="fas fa-book-reader"></i></div>
+                </div>
+                <strong>{{ stats.borrowed }}</strong>
+                <span class="stat-foot">Returns &amp; renewals</span>
+            </a>
+            <a class="stat-card stat-card-link overdue-card" href="{{ url_for('librarian.manage_borrowings', status='Overdue') }}">
+                <div class="stat-header">
+                    <span>Overdue</span>
+                    <div class="stat-icon"><i class="fas fa-exclamation-circle"></i></div>
+                </div>
+                <strong class="danger">{{ stats.overdue }}</strong>
+                <span class="stat-foot">Needs follow-up</span>
+            </a>
+            <a class="stat-card stat-card-link" href="{{ url_for('librarian.manage_books') }}">
+                <div class="stat-header">
+                    <span>Catalog</span>
+                    <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
+                </div>
+                <strong>{{ stats.physical_books + stats.digital_books }}</strong>
+                <span class="stat-foot">{{ stats.physical_books }} physical · {{ stats.digital_books }} digital</span>
+            </a>
+        </div>
+
+        <div class="lm-dash-layout">
+
+            <section class="lm-dash-panel">
+                <div class="lm-dash-panel-head">
+                    <h2>Quick actions</h2>
+                    <p>Grouped by task — no duplicate shortcuts</p>
+                </div>
+
+                <div class="lm-action-groups">
+
+                    <div class="lm-action-group">
+                        <h3><i class="fas fa-book"></i> Catalog</h3>
+                        <div class="lm-action-list">
+                            <a href="{{ url_for('librarian.add_physical_book') }}" class="lm-action-item">
+                                <span class="lm-action-label">Add physical book</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                            <a href="{{ url_for('librarian.add_digital_book') }}" class="lm-action-item">
+                                <span class="lm-action-label">Add digital book</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                            <a href="{{ url_for('librarian.manage_books') }}" class="lm-action-item">
+                                <span class="lm-action-label">Books inventory</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                            <a href="{{ url_for('librarian.manage_categories') }}" class="lm-action-item">
+                                <span class="lm-action-label">Categories</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                            <a href="{{ url_for('librarian.manage_authors') }}" class="lm-action-item">
+                                <span class="lm-action-label">Authors</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="lm-action-group">
+                        <h3><i class="fas fa-arrows-rotate"></i> Circulation</h3>
+                        <p class="lm-action-group-note">Use the KPI cards above for pending, active, and overdue counts.</p>
+                        <div class="lm-action-list">
+                            <a href="{{ url_for('librarian.manage_borrowings') }}" class="lm-action-item">
+                                <span class="lm-action-label">Manage borrowings &amp; returns</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                            <a href="{{ url_for('librarian.manage_borrowings', status='Early') }}" class="lm-action-item">
+                                <span class="lm-action-label">Early return ready</span>
+                                {% if stats.early_return_candidates %}
+                                <span class="lm-badge lm-badge-teal">{{ stats.early_return_candidates }}</span>
+                                {% endif %}
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                            <a href="{{ url_for('librarian.manage_requests') }}" class="lm-action-item">
+                                <span class="lm-action-label">Borrow requests (all statuses)</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="lm-action-group">
+                        <h3><i class="fas fa-trophy"></i> Competitions</h3>
+                        <div class="lm-action-list">
+                            <a href="{{ url_for('competitions.manage_list') }}" class="lm-action-item">
+                                <span class="lm-action-label">Reading competitions</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                            <a href="{{ url_for('competitions.manage_create') }}" class="lm-action-item">
+                                <span class="lm-action-label">Create competition</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="lm-action-group">
+                        <h3><i class="fas fa-users"></i> Members</h3>
+                        <div class="lm-action-list">
+                            <a href="{{ url_for('librarian.add_user', source='librarian') }}" class="lm-action-item">
+                                <span class="lm-action-label">Add user</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                            <a href="{{ url_for('librarian.import_users', source='librarian') }}" class="lm-action-item">
+                                <span class="lm-action-label">Import users (Excel)</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                            <a href="{{ url_for('librarian.manage_users') }}" class="lm-action-item">
+                                <span class="lm-action-label">Manage users</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                            <a href="{{ url_for('librarian.manage_faculties') }}" class="lm-action-item">
+                                <span class="lm-action-label">Faculties</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <aside class="lm-dash-side">
+
+                {% if pending_requests_list %}
+                <section class="lm-dash-panel lm-dash-panel-compact">
+                    <div class="lm-dash-panel-head row-between">
+                        <div>
+                            <h2>Needs attention</h2>
+                            <p>Latest pending requests</p>
+                        </div>
+                        <a class="lm-dash-link" href="{{ url_for('librarian.manage_requests', status='Pending') }}">View all</a>
+                    </div>
+                    <ul class="lm-pending-list">
+                        {% for req in pending_requests_list %}
+                        <li>
+                            <div>
+                                <strong>{{ req.user.fullname if req.user else 'Unknown' }}</strong>
+                                <span>{{ req.book.title if req.book else 'Book removed' }}</span>
+                            </div>
+                            <a href="{{ url_for('librarian.manage_requests', status='Pending') }}" class="lm-pending-go" title="Open requests">
+                                <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </section>
+                {% endif %}
+
+                <div class="insights-hub-grid lm-insights-split">
+                    <section class="insights-panel">
+                        <div class="insights-panel-header">
+                            <div class="insights-panel-title">
+                                <span class="insights-icon-flame">🥇</span>
+                                <div>
+                                    <h2>Top physical</h2>
+                                    <p>By borrow activity</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="insights-panel-body">
+                            {% for book in popular_physical[:3] %}
+                            <a href="{{ url_for('books.detail', book_id=book.id) }}" class="insights-book-row">
+                                {% if loop.index == 1 %}
+                                    <div class="insights-rank-badge gold"><i class="fas fa-medal"></i> 1st</div>
+                                {% elif loop.index == 2 %}
+                                    <div class="insights-rank-badge silver"><i class="fas fa-medal"></i> 2nd</div>
+                                {% elif loop.index == 3 %}
+                                    <div class="insights-rank-badge bronze"><i class="fas fa-medal"></i> 3rd</div>
+                                {% endif %}
+                                <div class="insights-book-meta">
+                                    <span class="insights-book-title">{{ book.title }}</span>
+                                    <span class="insights-book-author">{{ book.borrows }} borrows</span>
+                                </div>
+                            </a>
+                            {% else %}
+                            <div class="insights-empty-state">
+                                <i class="fas fa-book"></i>
+                                <p>No data yet</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </section>
+
+                    <section class="insights-panel">
+                        <div class="insights-panel-header">
+                            <div class="insights-panel-title">
+                                <span class="insights-icon-flame">🥇</span>
+                                <div>
+                                    <h2>Top digital</h2>
+                                    <p>By online reads</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="insights-panel-body">
+                            {% for book in popular_digital[:3] %}
+                            <a href="{{ url_for('books.detail', book_id=book.id) }}" class="insights-book-row">
+                                {% if loop.index == 1 %}
+                                    <div class="insights-rank-badge gold"><i class="fas fa-medal"></i> 1st</div>
+                                {% elif loop.index == 2 %}
+                                    <div class="insights-rank-badge silver"><i class="fas fa-medal"></i> 2nd</div>
+                                {% elif loop.index == 3 %}
+                                    <div class="insights-rank-badge bronze"><i class="fas fa-medal"></i> 3rd</div>
+                                {% endif %}
+                                <div class="insights-book-meta">
+                                    <span class="insights-book-title">{{ book.title }}</span>
+                                    <span class="insights-book-author">{{ book.reads }} reads</span>
+                                </div>
+                            </a>
+                            {% else %}
+                            <div class="insights-empty-state">
+                                <i class="fas fa-file-pdf"></i>
+                                <p>No data yet</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </section>
+                </div>
+
+            </aside>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

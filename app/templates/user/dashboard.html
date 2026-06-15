@@ -1,0 +1,459 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+My Dashboard
+{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="user-dashboard-pro">
+
+    <div class="dashboard-hero-pro">
+        <div class="dashboard-hero-content">
+            <span class="dashboard-kicker">
+                Smart Reading Space
+            </span>
+
+            <h1>
+                Welcome back, {{ current_user.fullname.split(' ')[0] }}
+            </h1>
+
+            <p>
+                Track your borrowed books, deadlines, requests and reading activity in one place.
+            </p>
+
+            <div class="dashboard-hero-actions">
+                <a href="{{ url_for('books.index') }}" class="btn btn-primary">
+                    <i class="fas fa-search"></i>
+                    Browse Library
+                </a>
+
+                <a href="{{ url_for('user.favorites') }}" class="btn btn-ghost">
+                    <i class="fas fa-heart"></i>
+                    My Favorites
+                </a>
+            </div>
+        </div>
+
+        <div class="dashboard-hero-panel">
+            <div class="hero-panel-icon">
+                <i class="fas fa-book-open-reader"></i>
+            </div>
+
+            <div>
+                <span>Current Activity</span>
+                <strong>{{ active_borrows|length }}</strong>
+                <p>Active borrowed books</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-stats-pro">
+        <div class="dash-stat-card active">
+            <div class="dash-stat-icon">
+                <i class="fas fa-book-reader"></i>
+            </div>
+
+            <div>
+                <span>Active Borrows</span>
+                <strong>{{ active_borrows|length }}</strong>
+            </div>
+        </div>
+
+        <div class="dash-stat-card pending">
+            <div class="dash-stat-icon">
+                <i class="fas fa-hourglass-half"></i>
+            </div>
+
+            <div>
+                <span>Pending Requests</span>
+                <strong>{{ pending_requests|length }}</strong>
+            </div>
+        </div>
+
+        <div class="dash-stat-card favorite">
+            <div class="dash-stat-icon">
+                <i class="fas fa-star"></i>
+            </div>
+
+            <div>
+                <span>Favorites</span>
+                <strong>{{ favorites|length }}</strong>
+            </div>
+        </div>
+
+        <div class="dash-stat-card overdue">
+            <div class="dash-stat-icon">
+                <i class="fas fa-triangle-exclamation"></i>
+            </div>
+
+            <div>
+                <span>Overdue</span>
+                <strong>
+                    {{
+                        active_borrows
+                        | selectattr("is_overdue")
+                        | list
+                        | length
+                    }}
+                </strong>
+            </div>
+        </div>
+
+        <div class="dash-stat-card fine">
+            <div class="dash-stat-icon">
+                <i class="fas fa-money-bill-wave"></i>
+            </div>
+
+            <div>
+                <span>Estimated Fine</span>
+                <strong>{{ "{:,}".format(total_estimated_fine) }}</strong>
+                <small>UZS outstanding</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-layout-pro">
+        <div class="dashboard-main-col">
+
+            <div class="dash-section-card">
+                <div class="dash-section-header">
+                    <div>
+                        <h2>
+                            <i class="fas fa-bookmark"></i>
+                            Active Borrowed Books
+                        </h2>
+                        <p>Books you currently need to return.</p>
+                    </div>
+                </div>
+
+                {% if active_borrows %}
+                    <div class="borrow-card-list">
+                        {% for borrow in active_borrows %}
+                            {% set days_left = (borrow.return_date.date() - now.date()).days %}
+                            {% set progress = 100 if borrow.is_overdue else 82 if days_left <= 1 else 58 if days_left <= 3 else 32 %}
+
+                            <article class="borrow-card-pro {% if borrow.is_overdue %}is-overdue{% endif %}">
+                                <div class="borrow-cover">
+                                    {% if borrow.book and borrow.book.cover_image %}
+                                        <img
+                                            src="{{ url_for('static', filename=borrow.book.cover_image) }}"
+                                            alt="{{ borrow.book.title }}"
+                                        >
+                                    {% elif borrow.book %}
+                                        <span>{{ borrow.book.title[:1] }}</span>
+                                    {% else %}
+                                        <span>?</span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="borrow-info">
+                                    <div class="borrow-topline">
+                                        <span class="borrow-type">
+                                            Physical Book
+                                        </span>
+
+                                        {% if borrow.is_overdue %}
+                                            <span class="badge red">Overdue</span>
+                                        {% elif days_left == 0 %}
+                                            <span class="badge gold">Due Today</span>
+                                        {% elif days_left == 1 %}
+                                            <span class="badge gold">Return Tomorrow</span>
+                                        {% else %}
+                                            <span class="badge blue">Borrowed</span>
+                                        {% endif %}
+                                    </div>
+
+                                    <h3>
+                                        {{ borrow.book.title if borrow.book else "Deleted Book" }}
+                                    </h3>
+
+                                    <p>
+                                        {{ borrow.book.author.fullname if borrow.book and borrow.book.author else "Unknown Author" }}
+                                    </p>
+
+                                    <div class="return-meter">
+                                        <div class="return-meter-top">
+                                            <span>Return deadline</span>
+                                            <strong>{{ borrow.return_date.strftime('%d %b %Y') }}</strong>
+                                        </div>
+
+                                        <div class="return-progress">
+                                            <span style="width: {{ progress }}%;"></span>
+                                        </div>
+
+                                        <div class="return-note">
+                                            {% if borrow.is_overdue %}
+                                                <i class="fas fa-circle-exclamation"></i>
+                                                Deadline passed. Please return this book as soon as possible.
+                                                Estimated fine:
+                                                {{ "{:,}".format(borrow.fine_amount(late_fine_per_day)) }}
+                                                UZS
+                                            {% elif days_left == 0 %}
+                                                <i class="fas fa-clock"></i>
+                                                This book is due today.
+                                            {% elif days_left == 1 %}
+                                                <i class="fas fa-clock"></i>
+                                                1 day left
+                                            {% else %}
+                                                <i class="fas fa-clock"></i>
+                                                {{ days_left }} days left
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="dashboard-empty">
+                        <i class="fas fa-book-open"></i>
+                        <h3>No active borrowed books</h3>
+                        <p>Borrowed books will appear here after librarian approval.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="dash-section-card">
+                <div class="dash-section-header">
+                    <div>
+                        <h2>
+                            <i class="fas fa-timeline"></i>
+                            Recent History
+                        </h2>
+                        <p>Your latest borrowing activity.</p>
+                    </div>
+                </div>
+
+                {% if history %}
+                    <div class="history-timeline">
+                        {% for borrow in history[:6] %}
+                            <div class="timeline-item-pro">
+                                <div class="timeline-dot {% if borrow.status == 'Returned' %}green{% elif borrow.is_overdue %}red{% else %}blue{% endif %}"></div>
+
+                                <div class="timeline-body">
+                                    <strong>
+                                        {{ borrow.book.title if borrow.book else "Deleted Book" }}
+                                    </strong>
+
+                                    <span>
+                                        {% if borrow.status == "Returned" %}
+                                            Returned on {{ borrow.returned_at.strftime('%d %b %Y') if borrow.returned_at else "-" }}
+                                        {% elif borrow.is_overdue %}
+                                            Overdue since {{ borrow.return_date.strftime('%d %b %Y') }}
+                                        {% else %}
+                                            Borrowed on {{ borrow.borrowed_at.strftime('%d %b %Y') }}
+                                        {% endif %}
+                                    </span>
+                                </div>
+
+                                <span class="timeline-status">
+                                    {{ borrow.status }}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="dashboard-empty compact">
+                        <i class="fas fa-clock-rotate-left"></i>
+                        <p>No history found.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="dash-section-card">
+                <div class="dash-section-header">
+                    <div>
+                        <h2>
+                            <i class="fas fa-heart"></i>
+                            Favorite Books
+                        </h2>
+                        <p>Books you saved for later.</p>
+                    </div>
+
+                    <a href="{{ url_for('user.favorites') }}" class="section-link">
+                        See All
+                    </a>
+                </div>
+
+                {% if favorites %}
+                    <div class="favorite-grid-pro">
+                        {% for fav in favorites[:4] %}
+                            {% set b = fav.book %}
+                            <a
+                                href="{{ url_for('books.detail', book_id=b.id) }}"
+                                class="favorite-book-pro"
+                            >
+                                <div class="favorite-cover">
+                                    {% if b.cover_image %}
+                                        <img
+                                            src="{{ url_for('static', filename=b.cover_image) }}"
+                                            alt="{{ b.title }}"
+                                        >
+                                    {% else %}
+                                        <span>{{ b.title[:1] }}</span>
+                                    {% endif %}
+                                </div>
+
+                                <div>
+                                    <strong>{{ b.title }}</strong>
+                                    <span>{{ b.author.fullname if b.author else "Unknown Author" }}</span>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="dashboard-empty compact">
+                        <i class="fas fa-heart"></i>
+                        <p>You do not have favorite books yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <aside class="dashboard-side-col">
+            <div class="dash-side-card quick-actions-card">
+                <h2>Quick Actions</h2>
+
+                <a href="{{ url_for('books.index') }}">
+                    <i class="fas fa-search"></i>
+                    <span>Browse Books</span>
+                </a>
+
+                <a href="{{ url_for('user.favorites') }}">
+                    <i class="fas fa-heart"></i>
+                    <span>My Favorites</span>
+                </a>
+
+                <a href="{{ url_for('books.my_requests') }}">
+                    <i class="fas fa-hourglass-half"></i>
+                    <span>My Requests</span>
+                </a>
+
+                <a href="{{ url_for('user.notifications') }}">
+                    <i class="fas fa-bell"></i>
+                    <span>Notifications</span>
+                </a>
+            </div>
+
+            <div class="dash-side-card">
+                <div class="dash-section-header compact-header">
+                    <div>
+                        <h2>Notifications</h2>
+                        <p>Latest alerts</p>
+                    </div>
+                </div>
+
+                {% if notifications %}
+                    <div class="dashboard-notifications-pro">
+                        {% for notif in notifications[:4] %}
+                            <div
+                                class="notif-card-pro {{ notif.type }}"
+                                id="notification-{{ notif.id }}"
+                            >
+                                <span class="notif-icon">
+                                    {% if notif.type == "success" %}
+                                        <i class="fas fa-check"></i>
+                                    {% elif notif.type == "warning" %}
+                                        <i class="fas fa-triangle-exclamation"></i>
+                                    {% elif notif.type == "danger" %}
+                                        <i class="fas fa-circle-exclamation"></i>
+                                    {% else %}
+                                        <i class="fas fa-info"></i>
+                                    {% endif %}
+                                </span>
+
+                                <div>
+                                    <p>{{ notif.message }}</p>
+                                    <small>{{ notif.created_at.strftime('%d %b %Y %H:%M') }}</small>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onclick="markRead({{ notif.id }})"
+                                    aria-label="Mark as read"
+                                >
+                                    <i class="fas fa-xmark"></i>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="dashboard-empty compact">
+                        <i class="fas fa-bell-slash"></i>
+                        <p>No new alerts.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="dash-side-card">
+                <div class="dash-section-header compact-header">
+                    <div>
+                        <h2>Recommended</h2>
+                        <p>Popular books for you</p>
+                    </div>
+                </div>
+
+                {% if recommendations %}
+                    <div class="recommend-list-pro">
+                        {% for b in recommendations[:4] %}
+                            <a
+                                href="{{ url_for('books.detail', book_id=b.id) }}"
+                                class="recommend-item-pro"
+                            >
+                                <div class="recommend-cover">
+                                    {% if b.cover_image %}
+                                        <img
+                                            src="{{ url_for('static', filename=b.cover_image) }}"
+                                            alt="{{ b.title }}"
+                                        >
+                                    {% else %}
+                                        <span>{{ b.title[:1] }}</span>
+                                    {% endif %}
+                                </div>
+
+                                <div>
+                                    <strong>{{ b.title }}</strong>
+                                    <span>{{ b.author.fullname if b.author else "Unknown Author" }}</span>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="dashboard-empty compact">
+                        <i class="fas fa-lightbulb"></i>
+                        <p>No recommendations yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </aside>
+    </div>
+
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function markRead(id) {
+    fetch(`/api/notifications/read/${id}`, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": "{{ csrf_token() }}"
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const element = document.getElementById(`notification-${id}`);
+
+            if (element) {
+                element.remove();
+            }
+        }
+    });
+}
+</script>
+{% endblock %}

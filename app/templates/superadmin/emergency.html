@@ -1,0 +1,141 @@
+{% extends "superadmin/layout.html" %}
+{% block title %}Emergency Controls{% endblock %}
+{% block breadcrumb %}Emergency Controls{% endblock %}
+
+{% block extra_css %}
+<style>
+.emergency-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+}
+.emergency-card {
+    background: var(--sa-card);
+    border: 1px solid var(--sa-border);
+    border-radius: 14px;
+    padding: 20px 22px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    transition: border-color .2s, transform .2s;
+}
+.emergency-card:hover { border-color: rgba(108,92,231,.4); transform: translateY(-2px); }
+.emergency-card.is-active { border-color: rgba(231,76,60,.4); background: rgba(231,76,60,.04); }
+.emergency-card.is-active-warning { border-color: rgba(253,203,110,.4); background: rgba(253,203,110,.04); }
+.ec-icon {
+    width: 46px; height: 46px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+.ec-content { flex: 1; }
+.ec-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+.ec-desc { font-size: 12px; color: var(--sa-muted); line-height: 1.5; margin-bottom: 14px; }
+.ec-status {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+.ec-status.on  { background: rgba(231,76,60,.2); color: #ff7675; }
+.ec-status.off { background: rgba(0,184,148,.15); color: #55efc4; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+    <div class="sa-page-title"><i class="fas fa-triangle-exclamation"></i> Emergency Controls</div>
+    <div class="sa-page-subtitle">Toggle critical platform-wide settings. Changes take effect immediately.</div>
+</div>
+
+<div class="sa-alert sa-alert-warning" style="margin-bottom:24px;">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span><strong>Warning:</strong> These controls immediately affect all users on the platform. Use with caution.</span>
+</div>
+
+<div class="emergency-grid">
+    {% for key, label, btype, icon, desc in toggles %}
+    {% set is_on = toggle_states[key] %}
+    <div class="emergency-card {% if is_on %}{% if btype == 'danger' %}is-active{% elif btype == 'warning' %}is-active-warning{% endif %}{% endif %}">
+        <div class="ec-icon" style="
+            {% if btype == 'danger' %}background:rgba(231,76,60,.15);color:#ff7675;
+            {% elif btype == 'warning' %}background:rgba(253,203,110,.15);color:#fdcb6e;
+            {% else %}background:rgba(116,185,255,.15);color:#74b9ff;{% endif %}
+        "><i class="fas {{ icon }}"></i></div>
+        <div class="ec-content">
+            <div class="ec-title">{{ label }}</div>
+            <div class="ec-status {{ 'on' if is_on else 'off' }}">
+                {{ '🔴 ON' if is_on else '🟢 OFF' }}
+            </div>
+            <div class="ec-desc">{{ desc }}</div>
+            <div class="sa-toggle-wrap">
+                <label class="sa-toggle {% if btype == 'danger' %}danger{% elif btype == 'warning' %}warning{% endif %}">
+                    <input type="checkbox" id="toggle-{{ key }}"
+                           {% if is_on %}checked{% endif %}
+                           onchange="confirmToggle('{{ key }}', '{{ label }}', this.checked)">
+                    <span class="sa-toggle-slider"></span>
+                </label>
+                <span style="font-size:12px;color:var(--sa-muted);">{{ 'Enabled' if is_on else 'Disabled' }}</span>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Confirm Modal -->
+<div class="sa-modal-overlay" id="toggleModal">
+    <div class="sa-modal">
+        <div class="sa-modal-title" id="toggleModalTitle"></div>
+        <div class="sa-modal-desc" id="toggleModalDesc"></div>
+        <form id="toggleForm" method="post" action="{{ url_for('superadmin.emergency') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="key" id="toggleKey">
+            <input type="hidden" name="value" id="toggleValue">
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button type="button" onclick="cancelToggle()" class="sa-btn sa-btn-ghost">Cancel</button>
+                <button type="submit" id="toggleConfirmBtn" class="sa-btn sa-btn-danger">Confirm</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let _pendingCheckbox = null;
+let _pendingKey = null;
+let _pendingChecked = false;
+
+function confirmToggle(key, label, checked) {
+    // Store the checkbox to revert if cancelled
+    _pendingCheckbox = document.getElementById('toggle-' + key);
+    _pendingKey = key;
+    _pendingChecked = checked;
+
+    const action = checked ? 'Enable' : 'Disable';
+    const color  = checked ? '#e74c3c' : '#00b894';
+    document.getElementById('toggleModalTitle').innerHTML =
+        `<span style="color:${color}">${action}: ${label}</span>`;
+    document.getElementById('toggleModalDesc').textContent =
+        `Are you sure you want to ${action.toLowerCase()} "${label}"? This change takes effect immediately for all users.`;
+    document.getElementById('toggleKey').value = key;
+    document.getElementById('toggleValue').value = checked ? 'true' : 'false';
+    document.getElementById('toggleConfirmBtn').className = 'sa-btn ' + (checked ? 'sa-btn-danger' : 'sa-btn-success');
+    document.getElementById('toggleConfirmBtn').textContent = `✓ ${action}`;
+    document.getElementById('toggleModal').classList.add('open');
+}
+function cancelToggle() {
+    // Revert the checkbox state
+    if (_pendingCheckbox) {
+        _pendingCheckbox.checked = !_pendingChecked;
+    }
+    document.getElementById('toggleModal').classList.remove('open');
+}
+document.getElementById('toggleModal').addEventListener('click', function(e) {
+    if (e.target === this) cancelToggle();
+});
+</script>
+{% endblock %}

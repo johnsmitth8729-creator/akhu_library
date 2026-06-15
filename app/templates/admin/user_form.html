@@ -1,0 +1,319 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}{{ title }} | Admin Panel{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user.css') }}">
+{% endblock %}
+
+{% block content %}
+{% set UserModel = current_user.__class__ %}
+{% set BorrowRequestModel = UserModel.borrow_requests.property.mapper.class_ %}
+
+<div class="admin-users-page">
+    <!-- Page Header Section -->
+    <div class="section-header row-between align-center gap-3" style="margin-bottom: 28px;">
+        <div>
+            <h1 style="margin: 0; color: #082544; font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 800;">
+                {% if mode == 'create' %}Create New User{% else %}Edit User Profile{% endif %}
+            </h1>
+            <p class="muted" style="margin: 6px 0 0; color: #64748b;">
+                {% if mode == 'create' %}Register a new student, librarian, or administrator account.{% else %}Update university details, password, status, or role for this patron.{% endif %}
+            </p>
+        </div>
+        <div>
+            <a href="{{ url_for('admin.manage_users') }}" class="btn btn-ghost" style="height: 44px; display: inline-flex; align-items: center; gap: 8px; font-weight: 700; border-radius: 12px; border: 1.5px solid #e2e8f0; background: #ffffff; color: #0b3b6f;">
+                <i class="fas fa-arrow-left"></i> Back to Users
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Grid Shell -->
+    <div class="admin-user-edit-shell">
+        {% if mode == 'edit' %}
+        <!-- Left Sidebar: Profile Card, Quick Stats & Admin Actions -->
+        <aside class="admin-user-summary">
+            <!-- Profile Card -->
+            <div class="edit-profile-card">
+                <div class="avatar-circle-lg">
+                    {% if user.avatar %}
+                        <img src="{{ url_for('static', filename='uploads/avatars/' ~ user.avatar) }}" alt="{{ user.username }}" />
+                    {% else %}
+                        <span>{{ user.username[:2].upper() }}</span>
+                    {% endif %}
+                </div>
+                <h3>{{ user.fullname }}</h3>
+                <p class="username">@{{ user.username }}</p>
+                <div class="badges-row">
+                    <span class="badge-role {{ user.role }}">{{ user.role }}</span>
+                    {% if user.is_blocked %}
+                        <span class="badge-status blocked">Blocked</span>
+                    {% else %}
+                        <span class="badge-status active">Active</span>
+                    {% endif %}
+                </div>
+                <div class="meta-info">
+                    <div class="meta-item">
+                        <span>Email Address</span>
+                        <strong>{{ user.email }}</strong>
+                    </div>
+                    {% if user.phone_number %}
+                    <div class="meta-item">
+                        <span>Phone Number</span>
+                        <strong>{{ user.phone_number }}</strong>
+                    </div>
+                    {% endif %}
+                    {% if user.faculty_display %}
+                    <div class="meta-item">
+                        <span>Faculty Department</span>
+                        <strong>{{ user.faculty_display }}</strong>
+                    </div>
+                    {% endif %}
+                    {% if user.group_name %}
+                    <div class="meta-item">
+                        <span>Group Year / Class</span>
+                        <strong>{{ user.group_name }}</strong>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="edit-quick-stats">
+                <div class="stat-row borrows">
+                    <div class="stat-icon">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <div class="stat-details">
+                        <span>Active Borrows</span>
+                        <strong>{{ user.borrow_history.filter_by(status='Borrowed').count() }}</strong>
+                    </div>
+                </div>
+                <div class="stat-row requests">
+                    <div class="stat-icon">
+                        <i class="fas fa-file-invoice"></i>
+                    </div>
+                    <div class="stat-details">
+                        <span>Pending Requests</span>
+                        <strong>{{ user.borrow_requests.filter(BorrowRequestModel.status.in_(['Pending', 'Queued', 'Approved'])).count() }}</strong>
+                    </div>
+                </div>
+                <div class="stat-row quizzes">
+                    <div class="stat-icon">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <div class="stat-details">
+                        <span>Quiz Attempts</span>
+                        <strong>{{ user.quiz_attempts.count() if user.quiz_attempts else 0 }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Action Command Center -->
+            {% if user.id != current_user.id %}
+            <div class="edit-sidebar-actions">
+                <span style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; display: block; text-align: center;">Account Controls</span>
+                
+                <!-- Block/Unblock toggle -->
+                {% if user.is_blocked %}
+                    <form action="{{ url_for('admin.unblock_user', user_id=user.id) }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-user-check"></i> Activate Account
+                        </button>
+                    </form>
+                {% else %}
+                    <form action="{{ url_for('admin.block_user', user_id=user.id) }}" method="POST" onsubmit="return confirm('Block {{ user.username }}?')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-ban"></i> Block Account
+                        </button>
+                    </form>
+                {% endif %}
+
+                <!-- Reset password to default -->
+                <form method="post" action="{{ url_for('admin.reset_user_password', user_id=user.id) }}" onsubmit="return confirm('Reset this user\'s password to {{ default_password_hint }}?');" style="margin-top: 4px;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-ghost">
+                        <i class="fas fa-rotate"></i> Reset Password
+                    </button>
+                </form>
+
+                <!-- Delete User -->
+                <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="POST" onsubmit="return confirm('Permanently delete {{ user.username }}?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash-can"></i> Delete Account
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </aside>
+        {% endif %}
+
+        <!-- Right Column: Form Inputs -->
+        <section class="admin-user-form-main" style="{% if mode == 'create' %}grid-column: span 2;{% endif %}">
+            {% if mode == 'edit' and revealed_password %}
+            <div class="admin-form-card" style="border-color: #10b981; background: #f0fdf4;">
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                    <i class="fas fa-key" style="font-size: 20px; color: #10b981; margin-top: 2px;"></i>
+                    <div>
+                        <strong style="color: #166534; display: block; font-size: 15px;">Active password generated successfully</strong>
+                        <code style="font-size: 1.4rem; font-weight: 800; color: #082544; display: block; margin: 8px 0;">{{ revealed_password }}</code>
+                        <p style="color: #15803d; margin: 0; font-size: 13px;">Copy this password now. It will only be shown once on this screen.</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <form method="post">
+                {{ form.hidden_tag() }}
+
+                <!-- Card 1: Profile Details -->
+                <div class="admin-form-card">
+                    <div class="form-section-title">
+                        <span>Identity</span>
+                        <strong>Account Profile</strong>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label>{{ form.fullname.label }}</label>
+                            {{ form.fullname(class="form-input", placeholder="e.g. John Doe") }}
+                            {% for error in form.fullname.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+                        </div>
+
+                        <div class="form-group">
+                            <label>{{ form.username.label }}</label>
+                            {{ form.username(class="form-input", placeholder="e.g. jdoe") }}
+                            {% for error in form.username.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+                        </div>
+
+                        <div class="form-group">
+                            <label>{{ form.email.label }}</label>
+                            {{ form.email(class="form-input", placeholder="name@university.uz") }}
+                            {% for error in form.email.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+                        </div>
+
+                        <div class="form-group">
+                            <label>{{ form.phone_number.label }}</label>
+                            {{ form.phone_number(class="form-input", placeholder="+998 90 123 45 67") }}
+                            {% for error in form.phone_number.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+                        </div>
+
+                        <div class="form-group">
+                            <label>{{ form.role.label }}</label>
+                            {{ form.role(class="form-input", id="role") }}
+                            {% for error in form.role.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Academic Details -->
+                <div class="admin-form-card" style="margin-top: 24px;">
+                    <div class="form-section-title">
+                        <span>Academic Record</span>
+                        <strong>University Details</strong>
+                    </div>
+
+                    <p class="admin-form-note" id="academicRoleNote">
+                        Faculty and group are required for user accounts (role: User). Librarian and admin accounts do not need them.
+                    </p>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label>{{ form.faculty_id.label }}</label>
+                            {{ form.faculty_id(class="form-input", id="facultyField") }}
+                            {% for error in form.faculty_id.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+                        </div>
+
+                        <div class="form-group">
+                            <label>{{ form.group_name.label }}</label>
+                            {{ form.group_name(class="form-input", placeholder="e.g. CS-101", id="groupField") }}
+                            {% for error in form.group_name.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Security & Passwords -->
+                <div class="admin-form-card" style="margin-top: 24px;">
+                    <div class="form-section-title" id="password-section">
+                        <span>Security</span>
+                        <strong>{% if mode == 'create' %}Password Creation{% else %}Password Management{% endif %}</strong>
+                    </div>
+
+                    {% if mode == 'edit' %}
+                    <div class="admin-form-note" style="line-height: 1.6; margin-bottom: 20px;">
+                        <i class="fas fa-lock" style="color: #64748b; margin-right: 6px;"></i>
+                        The current password is stored encrypted and cannot be displayed. Set a new password below if you wish to change it.
+                    </div>
+                    {% endif %}
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label>{{ form.password.label }}</label>
+                            {{ form.password(class="form-input", placeholder="At least 8 characters", id="adminPasswordField") }}
+                            {% for error in form.password.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+                        </div>
+
+                        <div class="form-group">
+                            <label>{{ form.confirm_password.label }}</label>
+                            {{ form.confirm_password(class="form-input", placeholder="Repeat password") }}
+                            {% for error in form.confirm_password.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+                        </div>
+                    </div>
+
+                    {% if mode == 'edit' %}
+                    <p style="color: #64748b; font-size: 13px; margin: 16px 0 0; font-weight: 600;">Leave both password fields empty to keep the current password unchanged.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="admin-action-bar" style="margin-top: 28px;">
+                    <a href="{{ url_for('admin.manage_users') }}" class="btn btn-ghost" style="border: 1.5px solid #e2e8f0; background: white; color: #64748b;">Cancel</a>
+                    <button class="btn btn-primary" type="submit">
+                        <i class="fas fa-save"></i> Save Account
+                    </button>
+                </div>
+            </form>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (function () {
+        const roleField = document.getElementById("role");
+        const facultyField = document.getElementById("facultyField");
+        const groupField = document.getElementById("groupField");
+        const note = document.getElementById("academicRoleNote");
+
+        if (!roleField || !facultyField || !groupField || !note) {
+            return;
+        }
+
+        function syncAcademicFields() {
+            const isStudent = roleField.value === "user";
+
+            facultyField.required = isStudent;
+            groupField.required = isStudent;
+
+            if (isStudent) {
+                facultyField.removeAttribute("disabled");
+                groupField.removeAttribute("disabled");
+                note.textContent = "Faculty and group are required for user accounts (role: User). Librarian and admin accounts do not need them.";
+            } else {
+                facultyField.value = "0";
+                groupField.value = "";
+                facultyField.setAttribute("disabled", "disabled");
+                groupField.setAttribute("disabled", "disabled");
+                note.textContent = "Librarian and admin accounts are treated as staff profiles, so faculty and group are not required.";
+            }
+        }
+
+        roleField.addEventListener("change", syncAcademicFields);
+        syncAcademicFields();
+    })();
+</script>
+{% endblock %}

@@ -1,0 +1,136 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Manage Books | Librarian Panel{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/librarian.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="librarian-area">
+    <div class="container">
+        
+        <!-- Header -->
+        <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h1>Books Inventory</h1>
+                <p class="text-muted">View, edit and manage all library resources.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a class="btn btn-primary btn-action" href="{{ url_for('librarian.add_physical_book') }}">
+                    <i class="fas fa-book"></i> + Physical Book
+                </a>
+                <a class="btn btn-gold btn-action" href="{{ url_for('librarian.add_digital_book') }}">
+                    <i class="fas fa-file-pdf"></i> + Digital Book
+                </a>
+            </div>
+        </div>
+
+        <!-- Books Table Card -->
+        <div class="data-card">
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 35%;">Book Title</th>
+                            <th>Author & Category</th>
+                            <th class="text-center">Type</th>
+                            <th class="text-center">Stock Status</th>
+                            <th class="text-center">Borrows</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for b in pagination.items %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="stat-icon me-3 d-none d-md-flex" style="width: 36px; height: 36px; font-size: 0.9rem; background: #f8fafc; color: #94a3b8; border-radius: 8px;">
+                                        <i class="fas {{ 'fa-book' if b.book_type == 'physical' else 'fa-laptop-code' }}"></i>
+                                    </div>
+                                    <div class="book-info">
+                                        <a href="{{ url_for('books.detail', book_id=b.id) }}" class="info-main text-decoration-none">
+                                            {{ b.title }}
+                                        </a>
+                                        <span class="info-sub">ISBN: {{ b.isbn or '---' }}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="book-info">
+                                    <span class="info-main" style="font-size: 0.9rem;">{{ b.author.fullname if b.author else '—' }}</span>
+                                    <span class="info-sub">{{ b.category.name if b.category else '—' }}</span>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge {{ 'blue badge-outline' if b.book_type == 'physical' else 'purple badge-outline' }}">
+                                    {{ b.book_type.capitalize() }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <div class="stock-indicator justify-content-center">
+                                    {% set stock_percent = (b.available_quantity / b.quantity * 100) if b.quantity > 0 else 0 %}
+                                    <div class="stock-dot {{ 'bg-success' if stock_percent > 20 else 'bg-warning' if stock_percent > 0 else 'bg-danger' }}"></div>
+                                    <span class="fw-bold">{{ b.available_quantity }}/{{ b.quantity }}</span>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="text-muted fw-bold">{{ b.borrow_count }}</span>
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex justify-content-end gap-1">
+                                    {% if b.book_type == 'physical' %}
+                                        <a class="btn btn-ghost btn-sm text-primary" href="{{ url_for('librarian.edit_physical_book', book_id=b.id) }}" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    {% else %}
+                                        <a class="btn btn-ghost btn-sm text-primary" href="{{ url_for('librarian.edit_digital_book', book_id=b.id) }}" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    {% endif %}
+
+                                    <form method="POST" action="{{ url_for('librarian.delete_book', book_id=b.id) }}" onsubmit="return confirm('Delete this book?')" style="display:inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <button class="btn btn-ghost btn-sm text-danger" type="submit" title="Delete">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <p class="text-muted">No books found in the library.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        {% if pagination.pages > 1 %}
+        <div class="pagination-wrapper">
+            {% if pagination.has_prev %}
+                <a href="{{ url_for('librarian.manage_books', page=pagination.prev_num) }}" class="page-btn">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            {% endif %}
+            
+            <div class="page-info">
+                Page <strong>{{ pagination.page }}</strong> of {{ pagination.pages }}
+            </div>
+
+            {% if pagination.has_next %}
+                <a href="{{ url_for('librarian.manage_books', page=pagination.next_num) }}" class="page-btn">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

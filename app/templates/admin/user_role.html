@@ -1,0 +1,12 @@
+{% extends "layouts/base.html" %}
+{% block title %}Change role — {{ user.username }}{% endblock %}
+{% block content %}
+<section class="section">
+  <h1>Change role for {{ user.fullname }}</h1>
+  <form method="post" class="form card">
+    {{ form.hidden_tag() }}
+    <label>{{ form.role.label }} {{ form.role(class_="input") }}</label>
+    <button class="btn btn-primary" type="submit">Update role</button>
+  </form>
+</section>
+{% endblock %}

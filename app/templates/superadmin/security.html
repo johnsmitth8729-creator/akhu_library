@@ -1,0 +1,109 @@
+{% extends "superadmin/layout.html" %}
+{% block title %}Security Center{% endblock %}
+{% block breadcrumb %}Security Center{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+    <div class="sa-page-title"><i class="fas fa-shield-check"></i> Security Center</div>
+    <div class="sa-page-subtitle">Monitor login attempts, manage IP blocks, and review session activity.</div>
+</div>
+
+<!-- Stats Row -->
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;margin-bottom:24px;">
+    <div class="sa-kpi-card">
+        <div class="sa-kpi-icon" style="background:rgba(231,76,60,.15);color:#ff7675"><i class="fas fa-ban"></i></div>
+        <div class="sa-kpi-value">{{ blocked_ips|length }}</div>
+        <div class="sa-kpi-label">Blocked IPs</div>
+    </div>
+    <div class="sa-kpi-card">
+        <div class="sa-kpi-icon" style="background:rgba(253,203,110,.15);color:#fdcb6e"><i class="fas fa-triangle-exclamation"></i></div>
+        <div class="sa-kpi-value">{{ failed_today }}</div>
+        <div class="sa-kpi-label">Failed Logins Today</div>
+    </div>
+    {% for role, count in role_counts.items() %}
+    <div class="sa-kpi-card">
+        <div class="sa-kpi-icon" style="background:rgba(108,92,231,.15);color:#a29bfe"><i class="fas fa-users"></i></div>
+        <div class="sa-kpi-value">{{ count }}</div>
+        <div class="sa-kpi-label">{{ role|title }}s</div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- IP Blocker -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+    <div class="sa-card">
+        <div class="sa-card-title"><i class="fas fa-ban"></i> Block an IP Address</div>
+        <form method="post" action="{{ url_for('superadmin.security') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="block">
+            <div class="sa-form-group">
+                <label class="sa-form-label">IP Address</label>
+                <input name="ip" type="text" class="sa-form-input" placeholder="e.g. 192.168.1.100" required>
+            </div>
+            <button type="submit" class="sa-btn sa-btn-danger"><i class="fas fa-ban"></i> Block IP</button>
+        </form>
+    </div>
+
+    <div class="sa-card">
+        <div class="sa-card-title"><i class="fas fa-list"></i> Blocked IPs ({{ blocked_ips|length }})</div>
+        {% if blocked_ips %}
+        <div style="display:flex;flex-direction:column;gap:8px;">
+            {% for ip in blocked_ips %}
+            <div style="display:flex;align-items:center;justify-content:space-between;background:var(--sa-bg);border:1px solid var(--sa-border);border-radius:8px;padding:8px 12px;">
+                <code style="font-size:13px;color:#ff7675;">{{ ip }}</code>
+                <form method="post" action="{{ url_for('superadmin.security') }}" style="margin:0;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="unblock">
+                    <input type="hidden" name="ip" value="{{ ip }}">
+                    <button type="submit" class="sa-btn sa-btn-ghost sa-btn-sm">
+                        <i class="fas fa-unlock"></i> Unblock
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align:center;padding:24px;color:var(--sa-muted);">
+            <i class="fas fa-shield-check" style="font-size:28px;opacity:.3;display:block;margin-bottom:8px;"></i>
+            No blocked IPs.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recent Login Attempts -->
+<div class="sa-card">
+    <div class="sa-card-title"><i class="fas fa-clock-rotate-left"></i> Recent Login Attempts (Last 50)</div>
+    {% if recent_attempts %}
+    <div class="sa-table-wrapper">
+        <table class="sa-table">
+            <thead>
+                <tr><th>Time</th><th>Action</th><th>User/Details</th><th>IP</th></tr>
+            </thead>
+            <tbody>
+                {% for log in recent_attempts %}
+                <tr>
+                    <td style="font-size:12px;color:var(--sa-muted);white-space:nowrap;">
+                        {{ log.created_at.strftime('%m-%d %H:%M:%S') if log.created_at else '—' }}
+                    </td>
+                    <td>
+                        {% if 'FAILED' in log.action %}
+                        <span class="sa-badge sa-badge-danger">{{ log.action }}</span>
+                        {% elif 'LOGOUT' in log.action %}
+                        <span class="sa-badge sa-badge-warning">{{ log.action }}</span>
+                        {% else %}
+                        <span class="sa-badge sa-badge-success">{{ log.action }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:12px;color:var(--sa-muted);">{{ log.details or '—' }}</td>
+                    <td style="font-size:12px;color:var(--sa-muted);">{{ log.ip_address or '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:30px;color:var(--sa-muted);">No login attempts recorded yet.</div>
+    {% endif %}
+</div>
+{% endblock %}

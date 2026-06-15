@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>{% block title %}SuperAdmin{% endblock %} – Al-Khwarizmi Control Center</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --sa-bg:       #0a0a0f;
+            --sa-surface:  #13131a;
+            --sa-card:     #1a1a26;
+            --sa-border:   #2a2a3a;
+            --sa-accent:   #6c5ce7;
+            --sa-accent2:  #a29bfe;
+            --sa-danger:   #e74c3c;
+            --sa-success:  #00b894;
+            --sa-warning:  #fdcb6e;
+            --sa-info:     #74b9ff;
+            --sa-text:     #e2e8f0;
+            --sa-muted:    #8892a4;
+            --sa-sidebar-w: 260px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--sa-bg);
+            color: var(--sa-text);
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* ---- Sidebar ---- */
+        .sa-sidebar {
+            width: var(--sa-sidebar-w);
+            min-height: 100vh;
+            background: var(--sa-surface);
+            border-right: 1px solid var(--sa-border);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0; left: 0;
+            z-index: 100;
+            transition: transform .3s ease;
+        }
+        .sa-sidebar-brand {
+            padding: 24px 20px 16px;
+            border-bottom: 1px solid var(--sa-border);
+        }
+        .sa-brand-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            border-radius: 10px;
+            padding: 6px 12px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: #fff;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .sa-brand-name {
+            font-size: 13px;
+            color: var(--sa-muted);
+            font-weight: 500;
+        }
+        .sa-sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 0;
+        }
+        .sa-nav-section {
+            padding: 8px 16px 4px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: var(--sa-muted);
+            text-transform: uppercase;
+        }
+        .sa-nav-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            color: var(--sa-muted);
+            text-decoration: none;
+            font-size: 13.5px;
+            font-weight: 500;
+            border-left: 3px solid transparent;
+            transition: all .15s;
+        }
+        .sa-nav-link:hover {
+            color: var(--sa-text);
+            background: rgba(108,92,231,.1);
+        }
+        .sa-nav-link.active {
+            color: var(--sa-accent2);
+            background: rgba(108,92,231,.15);
+            border-left-color: var(--sa-accent);
+        }
+        .sa-nav-link i { width: 18px; text-align: center; font-size: 14px; }
+
+        .sa-sidebar-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--sa-border);
+        }
+        .sa-user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .sa-avatar {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .sa-user-name { font-size: 13px; font-weight: 600; }
+        .sa-user-role { font-size: 11px; color: var(--sa-accent2); }
+        .sa-exit-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            padding: 8px 12px;
+            background: rgba(231,76,60,.15);
+            border: 1px solid rgba(231,76,60,.3);
+            border-radius: 8px;
+            color: #e74c3c;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all .2s;
+        }
+        .sa-exit-btn:hover { background: rgba(231,76,60,.25); }
+
+        /* ---- Main ---- */
+        .sa-main {
+            margin-left: var(--sa-sidebar-w);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .sa-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 28px;
+            background: var(--sa-surface);
+            border-bottom: 1px solid var(--sa-border);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        .sa-breadcrumb {
+            font-size: 13px;
+            color: var(--sa-muted);
+        }
+        .sa-breadcrumb span { color: var(--sa-text); }
+        .sa-topbar-actions { display: flex; align-items: center; gap: 12px; }
+        .sa-back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: var(--sa-card);
+            border: 1px solid var(--sa-border);
+            border-radius: 8px;
+            color: var(--sa-muted);
+            text-decoration: none;
+            font-size: 12px;
+            transition: all .2s;
+        }
+        .sa-back-link:hover { color: var(--sa-text); border-color: var(--sa-accent); }
+        .sa-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--sa-text);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+
+        /* Impersonation banner */
+        .sa-impersonation-banner {
+            background: linear-gradient(90deg, #e17055, #d63031);
+            color: #fff;
+            padding: 10px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .sa-impersonation-banner a {
+            color: #fff;
+            font-weight: 700;
+            text-decoration: underline;
+        }
+
+        /* Content */
+        .sa-content {
+            padding: 28px;
+            flex: 1;
+        }
+        .sa-page-header {
+            margin-bottom: 24px;
+        }
+        .sa-page-title {
+            font-size: 22px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sa-page-title i { color: var(--sa-accent2); }
+        .sa-page-subtitle {
+            font-size: 13px;
+            color: var(--sa-muted);
+            margin-top: 4px;
+        }
+
+        /* Cards */
+        .sa-card {
+            background: var(--sa-card);
+            border: 1px solid var(--sa-border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .sa-card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--sa-muted);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* KPI Grid */
+        .sa-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .sa-kpi-card {
+            background: var(--sa-card);
+            border: 1px solid var(--sa-border);
+            border-radius: 12px;
+            padding: 18px 20px;
+            transition: border-color .2s, transform .2s;
+        }
+        .sa-kpi-card:hover { border-color: var(--sa-accent); transform: translateY(-2px); }
+        .sa-kpi-icon {
+            width: 40px; height: 40px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+        .sa-kpi-value {
+            font-size: 26px;
+            font-weight: 800;
+            line-height: 1;
+        }
+        .sa-kpi-label {
+            font-size: 12px;
+            color: var(--sa-muted);
+            margin-top: 4px;
+        }
+
+        /* Table */
+        .sa-table-wrapper { overflow-x: auto; }
+        table.sa-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .sa-table th {
+            padding: 10px 14px;
+            background: rgba(108,92,231,.08);
+            color: var(--sa-muted);
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: .8px;
+            text-align: left;
+            border-bottom: 1px solid var(--sa-border);
+        }
+        .sa-table td {
+            padding: 11px 14px;
+            border-bottom: 1px solid var(--sa-border);
+            color: var(--sa-text);
+        }
+        .sa-table tr:hover td { background: rgba(108,92,231,.06); }
+        .sa-table tr:last-child td { border-bottom: none; }
+
+        /* Badges */
+        .sa-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .sa-badge-purple  { background: rgba(108,92,231,.2); color: #a29bfe; }
+        .sa-badge-danger  { background: rgba(231,76,60,.2);  color: #ff7675; }
+        .sa-badge-success { background: rgba(0,184,148,.2);  color: #55efc4; }
+        .sa-badge-warning { background: rgba(253,203,110,.2); color: #fdcb6e; }
+        .sa-badge-info    { background: rgba(116,185,255,.2); color: #74b9ff; }
+
+        /* Buttons */
+        .sa-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            border: none;
+            transition: all .2s;
+        }
+        .sa-btn-primary   { background: var(--sa-accent); color: #fff; }
+        .sa-btn-primary:hover { background: #5a4cd6; }
+        .sa-btn-danger    { background: rgba(231,76,60,.2); color: #e74c3c; border: 1px solid rgba(231,76,60,.4); }
+        .sa-btn-danger:hover { background: rgba(231,76,60,.35); }
+        .sa-btn-success   { background: rgba(0,184,148,.2); color: #00b894; border: 1px solid rgba(0,184,148,.4); }
+        .sa-btn-success:hover { background: rgba(0,184,148,.35); }
+        .sa-btn-ghost     { background: var(--sa-card); color: var(--sa-muted); border: 1px solid var(--sa-border); }
+        .sa-btn-ghost:hover { color: var(--sa-text); border-color: var(--sa-accent); }
+        .sa-btn-sm        { padding: 5px 10px; font-size: 12px; }
+
+        /* Forms */
+        .sa-form-group { margin-bottom: 16px; }
+        .sa-form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--sa-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: .8px;
+        }
+        .sa-form-input, .sa-form-select, .sa-form-textarea {
+            width: 100%;
+            background: var(--sa-bg);
+            border: 1px solid var(--sa-border);
+            border-radius: 8px;
+            padding: 9px 12px;
+            color: var(--sa-text);
+            font-size: 13px;
+            font-family: inherit;
+            transition: border-color .2s;
+        }
+        .sa-form-input:focus, .sa-form-select:focus, .sa-form-textarea:focus {
+            outline: none;
+            border-color: var(--sa-accent);
+        }
+        .sa-form-textarea { min-height: 100px; resize: vertical; }
+
+        /* Alerts */
+        .sa-alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sa-alert-success { background: rgba(0,184,148,.15); border: 1px solid rgba(0,184,148,.3); color: #55efc4; }
+        .sa-alert-danger  { background: rgba(231,76,60,.15);  border: 1px solid rgba(231,76,60,.3);  color: #ff7675; }
+        .sa-alert-warning { background: rgba(253,203,110,.15); border: 1px solid rgba(253,203,110,.3); color: #fdcb6e; }
+        .sa-alert-info    { background: rgba(116,185,255,.15); border: 1px solid rgba(116,185,255,.3); color: #74b9ff; }
+
+        /* Modal */
+        .sa-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .sa-modal-overlay.open { display: flex; }
+        .sa-modal {
+            background: var(--sa-card);
+            border: 1px solid var(--sa-border);
+            border-radius: 16px;
+            padding: 28px;
+            width: 90%;
+            max-width: 480px;
+            animation: sa-pop .2s ease;
+        }
+        @keyframes sa-pop {
+            from { opacity: 0; transform: scale(.95); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+        .sa-modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        .sa-modal-desc {
+            font-size: 13px;
+            color: var(--sa-muted);
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        /* Toggle switch */
+        .sa-toggle-wrap { display: flex; align-items: center; gap: 12px; }
+        .sa-toggle {
+            position: relative;
+            width: 48px; height: 26px;
+        }
+        .sa-toggle input { display: none; }
+        .sa-toggle-slider {
+            position: absolute;
+            inset: 0;
+            background: var(--sa-border);
+            border-radius: 26px;
+            cursor: pointer;
+            transition: .3s;
+        }
+        .sa-toggle-slider::before {
+            content: '';
+            position: absolute;
+            width: 20px; height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            top: 3px; left: 3px;
+            transition: .3s;
+        }
+        .sa-toggle input:checked + .sa-toggle-slider { background: var(--sa-accent); }
+        .sa-toggle input:checked + .sa-toggle-slider::before { transform: translateX(22px); }
+        .sa-toggle.danger input:checked + .sa-toggle-slider { background: var(--sa-danger); }
+        .sa-toggle.warning input:checked + .sa-toggle-slider { background: #e67e22; }
+
+        /* Pagination */
+        .sa-pagination {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .sa-pagination a, .sa-pagination span {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            border: 1px solid var(--sa-border);
+            background: var(--sa-card);
+            color: var(--sa-muted);
+            text-decoration: none;
+        }
+        .sa-pagination a:hover { border-color: var(--sa-accent); color: var(--sa-accent2); }
+        .sa-pagination span.current {
+            background: var(--sa-accent);
+            border-color: var(--sa-accent);
+            color: #fff;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sa-sidebar {
+                transform: translateX(-100%);
+            }
+            .sa-sidebar.open {
+                transform: translateX(0);
+            }
+            .sa-main {
+                margin-left: 0;
+            }
+            .sa-menu-btn { display: block; }
+            .sa-content { padding: 16px; }
+            .sa-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 480px) {
+            .sa-kpi-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sa-sidebar" id="saSidebar">
+        <div class="sa-sidebar-brand">
+            <div class="sa-brand-badge"><i class="fas fa-shield-halved"></i> SuperAdmin</div>
+            <div class="sa-brand-name">Al-Khwarizmi Control Center</div>
+        </div>
+        <div class="sa-sidebar-nav">
+            <div class="sa-nav-section">Overview</div>
+            <a href="{{ url_for('superadmin.dashboard') }}" class="sa-nav-link {% if request.endpoint == 'superadmin.dashboard' %}active{% endif %}">
+                <i class="fas fa-gauge-high"></i> Dashboard
+            </a>
+            <a href="{{ url_for('superadmin.analytics') }}" class="sa-nav-link {% if request.endpoint == 'superadmin.analytics' %}active{% endif %}">
+                <i class="fas fa-chart-bar"></i> Analytics
+            </a>
+
+            <div class="sa-nav-section">System</div>
+            <a href="{{ url_for('superadmin.database') }}" class="sa-nav-link {% if request.endpoint == 'superadmin.database' %}active{% endif %}">
+                <i class="fas fa-database"></i> Database & Backups
+            </a>
+            <a href="{{ url_for('superadmin.settings') }}" class="sa-nav-link {% if request.endpoint == 'superadmin.settings' %}active{% endif %}">
+                <i class="fas fa-sliders"></i> System Settings
+            </a>
+            <a href="{{ url_for('superadmin.emergency') }}" class="sa-nav-link {% if request.endpoint == 'superadmin.emergency' %}active{% endif %}">
+                <i class="fas fa-triangle-exclamation"></i> Emergency Controls
+            </a>
+
+            <div class="sa-nav-section">Security & Audit</div>
+            <a href="{{ url_for('superadmin.security') }}" class="sa-nav-link {% if request.endpoint == 'superadmin.security' %}active{% endif %}">
+                <i class="fas fa-shield-check"></i> Security Center
+            </a>
+            <a href="{{ url_for('superadmin.audit') }}" class="sa-nav-link {% if request.endpoint == 'superadmin.audit' %}active{% endif %}">
+                <i class="fas fa-list-check"></i> Audit Log
+            </a>
+
+            <div class="sa-nav-section">Management</div>
+            <a href="{{ url_for('superadmin.users') }}" class="sa-nav-link {% if request.endpoint == 'superadmin.users' %}active{% endif %}">
+                <i class="fas fa-users"></i> User Management
+            </a>
+            <a href="{{ url_for('superadmin.notifications') }}" class="sa-nav-link {% if request.endpoint == 'superadmin.notifications' %}active{% endif %}">
+                <i class="fas fa-bell"></i> Send Notifications
+            </a>
+
+            <div class="sa-nav-section">Files & Logs</div>
+            <a href="{{ url_for('superadmin.files') }}" class="sa-nav-link {% if request.endpoint == 'superadmin.files' %}active{% endif %}">
+                <i class="fas fa-folder-open"></i> File Manager
+            </a>
+            <a href="{{ url_for('superadmin.logs') }}" class="sa-nav-link {% if request.endpoint == 'superadmin.logs' %}active{% endif %}">
+                <i class="fas fa-terminal"></i> App Logs
+            </a>
+        </div>
+        <div class="sa-sidebar-footer">
+            <div class="sa-user-info">
+                <div class="sa-avatar">{{ current_user.fullname[0]|upper }}</div>
+                <div>
+                    <div class="sa-user-name">{{ current_user.fullname }}</div>
+                    <div class="sa-user-role">SuperAdmin</div>
+                </div>
+            </div>
+            <a href="{{ url_for('main.home') }}" class="sa-exit-btn">
+                <i class="fas fa-arrow-left"></i> Back to Site
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main -->
+    <div class="sa-main">
+        {% if is_impersonating %}
+        <div class="sa-impersonation-banner">
+            <span><i class="fas fa-user-secret"></i> You are currently impersonating a user.</span>
+            <a href="{{ url_for('superadmin.exit_impersonation') }}">Exit Impersonation →</a>
+        </div>
+        {% endif %}
+
+        <div class="sa-topbar">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <button class="sa-menu-btn" onclick="toggleSidebar()" aria-label="Toggle Menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="sa-breadcrumb">
+                    SuperAdmin / <span>{% block breadcrumb %}Dashboard{% endblock %}</span>
+                </div>
+            </div>
+            <div class="sa-topbar-actions">
+                <a href="{{ url_for('main.home') }}" class="sa-back-link">
+                    <i class="fas fa-globe"></i> View Site
+                </a>
+            </div>
+        </div>
+
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div style="padding: 16px 28px 0;">
+            {% for category, message in messages %}
+            <div class="sa-alert sa-alert-{{ category if category in ['success','danger','warning','info'] else 'info' }}">
+                <i class="fas fa-{{ 'check' if category == 'success' else 'xmark' if category == 'danger' else 'exclamation' }}"></i>
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="sa-content">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById('saSidebar').classList.toggle('open');
+        }
+        // Close sidebar on outside click (mobile)
+        document.addEventListener('click', function(e) {
+            const sidebar = document.getElementById('saSidebar');
+            const menuBtn = document.querySelector('.sa-menu-btn');
+            if (window.innerWidth <= 768 && sidebar.classList.contains('open')) {
+                if (!sidebar.contains(e.target) && !menuBtn.contains(e.target)) {
+                    sidebar.classList.remove('open');
+                }
+            }
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

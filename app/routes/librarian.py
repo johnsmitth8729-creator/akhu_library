@@ -1371,7 +1371,6 @@ def add_user():
 
 @librarian_bp.route("/users/import", methods=["GET", "POST"])
 def import_users():
-    # source may be provided as query param or posted in the form; prefer posted value on POST
     source = request.values.get("source", "librarian")
     if source not in BACK_URLS:
         source = "librarian"
@@ -1379,14 +1378,6 @@ def import_users():
     back_url = url_for(BACK_URLS[source])
 
     form = UserImportForm()
-    load_faculty_choices(form, include_empty=False)
-
-    if request.method == "GET":
-        form.default_password.data = default_temp_password()
-
-    if not form.faculty_id.choices:
-        flash("Add at least one faculty before importing users.", "warning")
-        return redirect(url_for("librarian.manage_faculties"))
 
     if form.validate_on_submit():
         upload = form.excel_file.data
@@ -1395,12 +1386,10 @@ def import_users():
             preview = parse_excel_file(
                 file_bytes,
                 upload.filename,
-                form.faculty_id.data,
             )
             token = secrets.token_urlsafe(16)
             session["user_import_preview"] = preview_to_session_dict(preview)
             session["user_import_token"] = token
-            session["user_import_password"] = form.default_password.data
             return redirect(url_for("librarian.import_users_preview", token=token, source=source))
         except ValueError as exc:
             flash(str(exc), "danger")
@@ -1408,6 +1397,74 @@ def import_users():
             flash("Could not read the Excel file. Check the format and try again.", "danger")
 
     return render_template("librarian/import_users.html", form=form, source=source, back_url=back_url)
+
+
+@librarian_bp.route("/users/import/template")
+def download_import_template():
+    import io
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    from flask import send_file
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Patrons_Template"
+
+    headers = [
+        "Full Name",
+        "Email Address",
+        "Phone Number",
+        "Group",
+        "Passport Series & Number",
+        "Faculty",
+    ]
+    ws.append(headers)
+
+    sample_rows = [
+        ["Ali Valiyev", "ali.valiyev@univ.uz", "+998901112233", "221-22", "AA1234567", "Computer Science"],
+        ["Dilnoza Karimova", "dilnoza.k@univ.uz", "+998937654321", "222-21", "AB7654321", "Software Engineering"],
+        ["Sardor Rahimov", "sardor.r@univ.uz", "+998941234567", "223-22", "AD9876543", "Applied Mathematics"],
+    ]
+    for row in sample_rows:
+        ws.append(row)
+
+    header_fill = PatternFill(start_color="0B3B6F", end_color="0B3B6F", fill_type="solid")
+    header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+    thin_border = Border(
+        left=Side(style="thin", color="D1D5DB"),
+        right=Side(style="thin", color="D1D5DB"),
+        top=Side(style="thin", color="D1D5DB"),
+        bottom=Side(style="thin", color="D1D5DB"),
+    )
+
+    for col_num in range(1, len(headers) + 1):
+        cell = ws.cell(row=1, column=col_num)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border = thin_border
+
+    column_widths = [24, 28, 20, 14, 26, 26]
+    for i, width in enumerate(column_widths, start=1):
+        ws.column_dimensions[get_column_letter(i)].width = width
+
+    for row_idx in range(2, len(sample_rows) + 2):
+        for col_idx in range(1, len(headers) + 1):
+            c = ws.cell(row=row_idx, column=col_idx)
+            c.border = thin_border
+            c.alignment = Alignment(vertical="center")
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return send_file(
+        output,
+        download_name="Patrons_Import_Template.xlsx",
+        as_attachment=True,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
 
 
 @librarian_bp.route("/users/import/preview")

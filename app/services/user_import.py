@@ -47,6 +47,11 @@ EXPECTED_HEADERS = {
     "pasport seriya va raqam": "passport",
     "pasport seria va raqam": "passport",
     "pasport seriyasi va raqami": "passport",
+    "faculty": "faculty",
+    "faculty name": "faculty",
+    "fakultet": "faculty",
+    "fakulteti": "faculty",
+    "fakultet nomi": "faculty",
 }
 
 
@@ -69,6 +74,7 @@ class ImportRow:
     phone: str = ""
     group: str = ""
     passport: str = ""
+    faculty: str = ""
     username: str = ""
     status: str = "valid"
     message: str = ""
@@ -76,8 +82,8 @@ class ImportRow:
 
 @dataclass
 class ImportPreview:
-    faculty_id: int
-    faculty_name: str
+    faculty_id: int | None = None
+    faculty_name: str = ""
     rows: list[ImportRow] = field(default_factory=list)
 
     @property
@@ -149,10 +155,9 @@ def _map_headers(header_row: list[Any]) -> dict[int, str]:
     return mapping
 
 
-def parse_excel_file(file_bytes: bytes, filename: str, faculty_id: int) -> ImportPreview:
-    faculty = Faculty.query.get(faculty_id)
-    if not faculty:
-        raise ValueError("Selected faculty was not found.")
+def parse_excel_file(file_bytes: bytes, filename: str, faculty_id: int | None = None) -> ImportPreview:
+    faculty = Faculty.query.get(faculty_id) if faculty_id else None
+    faculty_name = faculty.name if faculty else ""
 
     raw_rows = _load_workbook_rows(file_bytes, filename)
     if not raw_rows:
@@ -166,7 +171,7 @@ def parse_excel_file(file_bytes: bytes, filename: str, faculty_id: int) -> Impor
             "Full Name, Email Address, Phone Number, Group, Passport Series & Number."
         )
 
-    preview = ImportPreview(faculty_id=faculty.id, faculty_name=faculty.name)
+    preview = ImportPreview(faculty_id=faculty_id, faculty_name=faculty_name)
     seen_phones: set[str] = set()
     seen_emails: set[str] = set()
     seen_passports: set[str] = set()
@@ -206,6 +211,7 @@ def parse_excel_file(file_bytes: bytes, filename: str, faculty_id: int) -> Impor
         row.email = _normalize_email(values.get("email", ""))
         row.phone = values.get("phone", "")
         row.group = values.get("group", "")
+        row.faculty = values.get("faculty", "").strip()
         raw_passport = values.get("passport", "").strip()
         row.passport = "".join(raw_passport.split()).upper() if raw_passport else ""
 
@@ -323,6 +329,7 @@ def preview_to_session_dict(preview: ImportPreview) -> dict[str, Any]:
                 "phone": row.phone,
                 "group": row.group,
                 "passport": row.passport,
+                "faculty": row.faculty,
                 "username": row.username,
                 "status": row.status,
                 "message": row.message,
@@ -334,7 +341,7 @@ def preview_to_session_dict(preview: ImportPreview) -> dict[str, Any]:
 
 def preview_from_session_dict(data: dict[str, Any]) -> ImportPreview:
     preview = ImportPreview(
-        faculty_id=data["faculty_id"],
+        faculty_id=data.get("faculty_id"),
         faculty_name=data.get("faculty_name", ""),
     )
     for row in data.get("rows", []):
@@ -346,6 +353,7 @@ def preview_from_session_dict(data: dict[str, Any]) -> ImportPreview:
                 phone=row["phone"],
                 group=row["group"],
                 passport=row.get("passport", ""),
+                faculty=row.get("faculty", ""),
                 username=row["username"],
                 status=row["status"],
                 message=row.get("message", ""),
@@ -355,7 +363,7 @@ def preview_from_session_dict(data: dict[str, Any]) -> ImportPreview:
 
 
 def commit_import(preview: ImportPreview, password: str | None = None) -> ImportResult:
-    faculty = Faculty.query.get_or_404(preview.faculty_id)
+    faculty = Faculty.query.get(preview.faculty_id) if preview.faculty_id else None
     temp_password = password or default_temp_password()
     result = ImportResult()
 
@@ -427,14 +435,25 @@ def commit_import(preview: ImportPreview, password: str | None = None) -> Import
 
         passport_number = "".join(row.passport.split()).upper() if row.passport else None
 
+        row_faculty_name = row.faculty.strip() if getattr(row, "faculty", None) else (faculty.name if faculty else None)
+        row_faculty_id = None
+        if row_faculty_name:
+            from sqlalchemy import func
+            matched_faculty = Faculty.query.filter(func.lower(Faculty.name) == row_faculty_name.lower()).first()
+            if matched_faculty:
+                row_faculty_id = matched_faculty.id
+                row_faculty_name = matched_faculty.name
+            elif faculty:
+                row_faculty_id = faculty.id
+
         user = User(
             fullname=row.fullname.strip(),
             username=row.username,
             email=row.email,
             phone_number=normalized_phone,
             passport_number=passport_number,
-            faculty_id=faculty.id,
-            faculty=faculty.name,
+            faculty_id=row_faculty_id,
+            faculty=row_faculty_name,
             group_name=row.group.strip(),
             role=User.ROLE_USER,
             email_verified=False,

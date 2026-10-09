@@ -2263,58 +2263,178 @@
     color: #0f766e;
 }
 
+.librarian-area .lm-import-hero {
+    position: relative;
+    overflow: hidden;
+    margin-top: 1.5rem;
+    margin-bottom: 2rem;
+    padding: 34px 38px;
+    border-radius: 28px;
+    color: #ffffff;
+    background:
+        linear-gradient(135deg, rgba(8, 37, 68, 0.98), rgba(11, 59, 111, 0.92)),
+        url("../images/library-bg.jpg") center / cover;
+    box-shadow: var(--akhu-shadow-lg, 0 34px 90px rgba(8, 37, 68, 0.18));
+}
+
+.librarian-area .lm-import-card,
+.librarian-area .lm-import-guide {
+    border-radius: 26px;
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(8, 37, 68, 0.06);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
 .librarian-area .lm-import-submit {
-    min-height: 54px;
-    border-radius: 15px !important;
+    min-height: 52px;
+    border-radius: 14px !important;
+    font-size: 1rem;
+    font-weight: 700;
     color: #111827 !important;
-    box-shadow: 0 18px 38px rgba(212, 175, 55, 0.26);
+    box-shadow: 0 16px 36px rgba(212, 175, 55, 0.28);
+    transition: all 0.2s ease;
+}
+
+.librarian-area .lm-import-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 42px rgba(212, 175, 55, 0.36);
 }
 
 .librarian-area .lm-import-guide {
     position: sticky;
-    top: 108px;
+    top: 96px;
+    padding: 1.75rem 2rem;
 }
 
 .librarian-area .lm-import-guide .lm-guide-title {
-    font-size: 1.15rem;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--navy);
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-.librarian-area .lm-import-guide .lm-format-table {
-    width: 100%;
-    min-width: 520px;
-    max-width: 100%;
+/* Excel Mockup Window */
+.excel-mockup-card {
+    border-radius: 18px;
     overflow: hidden;
-    border-radius: 16px;
-    border-collapse: separate;
-    border-spacing: 0;
-    border: 1px solid rgba(226, 232, 240, 0.95);
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+    margin: 1.25rem 0;
 }
 
-.librarian-area .lm-format-table-wrap {
-    width: 100%;
-    max-width: 100%;
-    margin-top: 1rem;
+.excel-mockup-header {
+    background: #107c41;
+    color: #ffffff;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.excel-mockup-header-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.excel-mockup-dl-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff !important;
+    padding: 4px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 0.78rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.excel-mockup-dl-btn:hover {
+    background: rgba(255, 255, 255, 0.35);
+    color: #ffffff !important;
+}
+
+.excel-mockup-table-wrap {
     overflow-x: auto;
-    overflow-y: hidden;
-    border-radius: 16px;
+    background: #ffffff;
 }
 
-.librarian-area .lm-import-guide .lm-format-table th,
-.librarian-area .lm-import-guide .lm-format-table td {
-    border: 0;
-    border-bottom: 1px solid rgba(226, 232, 240, 0.9);
-    white-space: normal;
-    overflow-wrap: anywhere;
+.excel-mockup-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    min-width: 680px;
 }
 
-.librarian-area .lm-import-guide .lm-format-table tbody tr:last-child td {
-    border-bottom: 0;
+.excel-mockup-table th {
+    background: #f3f4f6;
+    color: #1f2937;
+    font-weight: 700;
+    padding: 10px 14px;
+    border: 1px solid #e5e7eb;
+    white-space: nowrap;
+    text-align: left;
 }
 
-.librarian-area .lm-import-guide .lm-hint-list li {
-    padding: 10px 12px;
-    border-radius: 12px;
+.excel-mockup-table th .badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    margin-left: 4px;
+    padding: 3px 6px;
+    border-radius: 6px;
+}
+
+.excel-mockup-table td {
+    padding: 10px 14px;
+    border: 1px solid #e5e7eb;
+    white-space: nowrap;
+    color: #374151;
+    font-family: inherit;
+}
+
+.excel-mockup-table tr:nth-child(even) td {
+    background: #f9fafb;
+}
+
+.excel-mockup-table tr:hover td {
+    background: #f0fdf4;
+}
+
+.excel-mockup-table .col-letter {
+    width: 38px;
+    text-align: center;
+    color: #9ca3af;
+    background: #f9fafb;
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+.excel-rule-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
     background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    font-size: 0.86rem;
+    line-height: 1.5;
+    color: #334155;
+    margin-bottom: 8px;
+}
+
+.excel-rule-card i {
+    font-size: 1.1rem;
+    margin-top: 2px;
+    flex-shrink: 0;
 }
 
 @media (max-width: 992px) {

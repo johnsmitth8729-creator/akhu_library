@@ -60,16 +60,11 @@ ManualStudentForm = ManualUserForm
 
 
 class UserImportForm(FlaskForm):
-    faculty_id = SelectField("Faculty", coerce=int, validators=[DataRequired()])
     excel_file = FileField(
         "Excel file",
         validators=[
-            DataRequired(),
+            DataRequired(message="Please choose an Excel file (.xlsx or .xls)."),
             FileAllowed(["xlsx", "xls"], "Only .xlsx and .xls files are allowed."),
         ],
-    )
-    default_password = StringField(
-        "Default Password",
-        validators=[Optional(), Length(min=6, max=80)],
     )
     submit = SubmitField("Upload and Preview")

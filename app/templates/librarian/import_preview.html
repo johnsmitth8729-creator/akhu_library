@@ -12,7 +12,7 @@
         <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
                 <h1>Import Preview</h1>
-                <p class="text-muted">Faculty: <strong>{{ preview.faculty_name }}</strong> — review before confirming.</p>
+                <p class="text-muted">{% if preview.faculty_name %}Faculty: <strong>{{ preview.faculty_name }}</strong> — {% endif %}Review patron records before confirming account creation.</p>
             </div>
             <a href="{{ back_url }}" class="btn btn-ghost">Cancel</a>
         </div>
@@ -33,6 +33,7 @@
                             <th>Email</th>
                             <th>Phone</th>
                             <th>Group</th>
+                            <th>Faculty</th>
                             <th>Passport (Username & Password)</th>
                             <th>Status</th>
                         </tr>
@@ -45,6 +46,7 @@
                             <td>{{ row.email or '—' }}</td>
                             <td>{{ row.phone }}</td>
                             <td>{{ row.group }}</td>
+                            <td>{{ row.faculty or '—' }}</td>
                             <td><code>{{ row.username or row.passport or '—' }}</code></td>
                             <td>
                                 {% if row.status == 'valid' %}

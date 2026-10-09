@@ -75,3 +75,17 @@ class ImpersonationLog(db.Model):
 
     superadmin = db.relationship("User", foreign_keys=[superadmin_id], backref="impersonation_sessions")
     target_user = db.relationship("User", foreign_keys=[target_user_id], backref="was_impersonated")
+
+
+class ApiKey(db.Model):
+    __tablename__ = "api_keys"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    key = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    created_at = db.Column(db.DateTime, default=now_local)
+    last_used_at = db.Column(db.DateTime, nullable=True)
+    request_count = db.Column(db.Integer, default=0, nullable=False)
+
+    creator = db.relationship("User", foreign_keys=[created_by], backref="created_api_keys")

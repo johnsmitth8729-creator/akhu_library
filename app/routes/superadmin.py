@@ -974,3 +974,72 @@ def analytics():
         faculty_stats=faculty_stats,
         borrow_chart=json.dumps(borrow_chart),
     )
+
+
+# ---------------------------------------------------------------------------
+# API Integrations / Keys Management
+# ---------------------------------------------------------------------------
+
+@superadmin_bp.route("/api-integrations")
+def api_integrations():
+    from app.models.system import ApiKey
+    keys = ApiKey.query.order_by(ApiKey.created_at.desc()).all()
+
+    from app.services.student_ranking_service import get_student_rankings
+    preview = get_student_rankings(limit=5)
+
+    base_api_url = request.url_root.rstrip("/")
+    return render_template(
+        "superadmin/api_integrations.html",
+        api_keys=keys,
+        ranking_preview=preview.get("rankings", []),
+        total_students=preview.get("total_students", 0),
+        base_api_url=base_api_url,
+    )
+
+
+@superadmin_bp.route("/api-integrations/create", methods=["POST"])
+def create_api_key():
+    import secrets
+    from app.models.system import ApiKey
+
+    name = (request.form.get("name") or "").strip()
+    if not name:
+        flash("Integration name is required.", "danger")
+        return redirect(url_for("superadmin.api_integrations"))
+
+    new_key = f"akhu_live_{secrets.token_hex(20)}"
+    api_key = ApiKey(
+        name=name,
+        key=new_key,
+        created_by=current_user.id,
+    )
+    db.session.add(api_key)
+    db.session.commit()
+    flash(f"API Key '{name}' created successfully!", "success")
+    return redirect(url_for("superadmin.api_integrations"))
+
+
+@superadmin_bp.route("/api-integrations/<int:key_id>/toggle", methods=["POST"])
+def toggle_api_key(key_id):
+    from app.models.system import ApiKey
+
+    key_obj = ApiKey.query.get_or_404(key_id)
+    key_obj.is_active = not key_obj.is_active
+    db.session.commit()
+    status_label = "activated" if key_obj.is_active else "deactivated"
+    flash(f"API Key '{key_obj.name}' {status_label}.", "success")
+    return redirect(url_for("superadmin.api_integrations"))
+
+
+@superadmin_bp.route("/api-integrations/<int:key_id>/delete", methods=["POST"])
+def delete_api_key(key_id):
+    from app.models.system import ApiKey
+
+    key_obj = ApiKey.query.get_or_404(key_id)
+    name = key_obj.name
+    db.session.delete(key_obj)
+    db.session.commit()
+    flash(f"API Key '{name}' deleted permanently.", "success")
+    return redirect(url_for("superadmin.api_integrations"))
+

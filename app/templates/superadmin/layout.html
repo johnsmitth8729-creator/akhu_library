@@ -522,6 +522,9 @@
             <a href="{{ url_for('superadmin.settings') }}" class="sa-nav-link {% if request.endpoint == 'superadmin.settings' %}active{% endif %}">
                 <i class="fas fa-sliders"></i> System Settings
             </a>
+            <a href="{{ url_for('superadmin.api_integrations') }}" class="sa-nav-link {% if request.endpoint == 'superadmin.api_integrations' %}active{% endif %}">
+                <i class="fas fa-key"></i> API Integrations
+            </a>
             <a href="{{ url_for('superadmin.emergency') }}" class="sa-nav-link {% if request.endpoint == 'superadmin.emergency' %}active{% endif %}">
                 <i class="fas fa-triangle-exclamation"></i> Emergency Controls
             </a>

@@ -1,0 +1,219 @@
+{% extends "superadmin/layout.html" %}
+{% block title %}API Integrations{% endblock %}
+{% block breadcrumb %}API Integrations{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+    <div class="sa-page-title"><i class="fas fa-key"></i> Kitobxon Talabalar Reytingi API</div>
+    <div class="sa-page-subtitle">Boshqa saytlar va platformalar uchun kitobxon talabalar statistikasi va reytingi API kalitlarini boshqarish.</div>
+</div>
+
+<!-- KPI Cards -->
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-bottom:24px;">
+    <div class="sa-kpi-card">
+        <div class="sa-kpi-icon" style="background:rgba(108,92,231,.15);color:#a29bfe"><i class="fas fa-key"></i></div>
+        <div class="sa-kpi-value">{{ api_keys|length }}</div>
+        <div class="sa-kpi-label">Jami API Kalitlar</div>
+    </div>
+    <div class="sa-kpi-card">
+        <div class="sa-kpi-icon" style="background:rgba(0,184,148,.15);color:#00b894"><i class="fas fa-circle-check"></i></div>
+        <div class="sa-kpi-value">{{ api_keys|selectattr('is_active')|list|length }}</div>
+        <div class="sa-kpi-label">Faol Kalitlar</div>
+    </div>
+    <div class="sa-kpi-card">
+        <div class="sa-kpi-icon" style="background:rgba(9,132,227,.15);color:#0984e3"><i class="fas fa-users"></i></div>
+        <div class="sa-kpi-value">{{ total_students }}</div>
+        <div class="sa-kpi-label">Reytingdagi Talabalar</div>
+    </div>
+    <div class="sa-kpi-card">
+        <div class="sa-kpi-icon" style="background:rgba(253,203,110,.15);color:#fdcb6e"><i class="fas fa-bolt"></i></div>
+        <div class="sa-kpi-value">{{ api_keys|sum(attribute='request_count') }}</div>
+        <div class="sa-kpi-label">Jami So‘rovlar</div>
+    </div>
+</div>
+
+<!-- Create API Key & Documentation Grid -->
+<div style="display:grid;grid-template-columns:minmax(320px, 1fr) minmax(360px, 1.2fr);gap:20px;margin-bottom:24px;">
+    <!-- Create Form Card -->
+    <div class="sa-card">
+        <div class="sa-card-title"><i class="fas fa-plus-circle"></i> Yangi API Kalit Yaratish</div>
+        <p style="color:var(--sa-muted);font-size:13px;margin-bottom:16px;">
+            Boshqa platforma (masalan talabalar portali, KPI tizimi) uchun yangi API kalit biriktiring.
+        </p>
+
+        <form method="post" action="{{ url_for('superadmin.create_api_key') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="sa-form-group">
+                <label class="sa-form-label">Integratsiya / Sayt Nomi</label>
+                <input name="name" type="text" class="sa-form-input" placeholder="Masalan: Asosiy Universitet Portali, KPI Tizimi" required>
+            </div>
+            <button type="submit" class="sa-btn sa-btn-primary" style="width:100%;justify-content:center;">
+                <i class="fas fa-key"></i> API Kalit Yaratish
+            </button>
+        </form>
+    </div>
+
+    <!-- Quick Documentation Card -->
+    <div class="sa-card">
+        <div class="sa-card-title"><i class="fas fa-book-open"></i> API Bog‘lanish Ko‘rsatmalari</div>
+        <div style="font-size:13px;color:var(--sa-muted);line-height:1.6;">
+            <p style="margin-bottom:10px;">
+                <strong style="color:var(--sa-text);"><i class="fas fa-id-card text-primary"></i> Pasport orqali moslashtirish:</strong>
+                Har bir talabaning pasport seriya raqami (<code style="color:#00cec9;">passport_number</code>) unique kalit hisoblanadi.
+            </p>
+            <div style="background:rgba(0,0,0,0.25);border:1px solid var(--sa-border);border-radius:8px;padding:12px;margin-bottom:12px;font-family:monospace;font-size:12px;color:#dfe6e9;overflow-x:auto;">
+                <div><span style="color:#74b9ff;">GET</span> {{ base_api_url }}/api/rankings/students?api_key=KEY</div>
+                <div style="margin-top:4px;"><span style="color:#74b9ff;">GET</span> {{ base_api_url }}/api/rankings/student/&lt;passport_number&gt;?api_key=KEY</div>
+            </div>
+            <p style="margin:0;font-size:12px;color:var(--sa-muted);">
+                <i class="fas fa-shield-halved"></i> <strong>CORS qo‘llab-quvvatlanadi:</strong> Boshqa sayt to‘g‘ridan-to‘g‘ri brauzer orqali JavaScript <code>fetch()</code> qilishi mumkin.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- API Keys Table Card -->
+<div class="sa-card" style="margin-bottom:24px;">
+    <div class="sa-card-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span><i class="fas fa-list"></i> Mavjud API Kalitlar ({{ api_keys|length }})</span>
+    </div>
+
+    {% if api_keys %}
+    <div style="overflow-x:auto;">
+        <table class="sa-table" style="width:100%;border-collapse:collapse;">
+            <thead>
+                <tr>
+                    <th style="padding:12px 14px;text-align:left;color:var(--sa-muted);font-size:12px;text-transform:uppercase;">Nomi</th>
+                    <th style="padding:12px 14px;text-align:left;color:var(--sa-muted);font-size:12px;text-transform:uppercase;">API Kalit</th>
+                    <th style="padding:12px 14px;text-align:center;color:var(--sa-muted);font-size:12px;text-transform:uppercase;">Holat</th>
+                    <th style="padding:12px 14px;text-align:center;color:var(--sa-muted);font-size:12px;text-transform:uppercase;">So‘rovlar</th>
+                    <th style="padding:12px 14px;text-align:left;color:var(--sa-muted);font-size:12px;text-transform:uppercase;">So‘nggi ishlatilgan</th>
+                    <th style="padding:12px 14px;text-align:right;color:var(--sa-muted);font-size:12px;text-transform:uppercase;">Amallar</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for k in api_keys %}
+                <tr style="border-top:1px solid var(--sa-border);">
+                    <td style="padding:12px 14px;font-weight:600;color:var(--sa-text);">
+                        {{ k.name }}
+                    </td>
+                    <td style="padding:12px 14px;">
+                        <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(0,0,0,0.25);border:1px solid var(--sa-border);padding:4px 8px;border-radius:6px;">
+                            <code style="font-size:12px;color:#a29bfe;" id="key-val-{{ k.id }}">{{ k.key }}</code>
+                            <button type="button" class="sa-btn sa-btn-ghost sa-btn-sm" style="padding:2px 6px;" title="Nusxalash" onclick="copyText('{{ k.key }}', this)">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td style="padding:12px 14px;text-align:center;">
+                        {% if k.is_active %}
+                            <span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;background:rgba(0,184,148,0.2);color:#00cec9;">FAOL</span>
+                        {% else %}
+                            <span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;background:rgba(231,76,60,0.2);color:#ff7675;">NOFAOL</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding:12px 14px;text-align:center;font-weight:700;color:var(--sa-text);">
+                        {{ k.request_count or 0 }}
+                    </td>
+                    <td style="padding:12px 14px;font-size:12px;color:var(--sa-muted);">
+                        {{ k.last_used_at.strftime('%d.%m.%Y %H:%M') if k.last_used_at else 'Hali ishlatilmagan' }}
+                    </td>
+                    <td style="padding:12px 14px;text-align:right;">
+                        <div style="display:inline-flex;gap:6px;">
+                            <!-- Copy Full URL -->
+                            <button type="button" class="sa-btn sa-btn-ghost sa-btn-sm" title="To'liq API havolasini nusxalash" onclick="copyText('{{ base_api_url }}/api/rankings/students?api_key={{ k.key }}', this)">
+                                <i class="fas fa-link"></i> URL
+                            </button>
+
+                            <!-- Toggle Status Form -->
+                            <form method="post" action="{{ url_for('superadmin.toggle_api_key', key_id=k.id) }}" style="display:inline;margin:0;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="sa-btn sa-btn-ghost sa-btn-sm" title="{% if k.is_active %}O'chirish{% else %}Yoqish{% endif %}">
+                                    <i class="fas {% if k.is_active %}fa-toggle-on text-success{% else %}fa-toggle-off text-muted{% endif %}"></i>
+                                </button>
+                            </form>
+
+                            <!-- Delete Form -->
+                            <form method="post" action="{{ url_for('superadmin.delete_api_key', key_id=k.id) }}" style="display:inline;margin:0;" onsubmit="return confirm('Rostdan ham ushbu API kalitni o‘chirmoqchimisiz? Ushbu kalit orqali ulangan saytlar ishlamay qoladi.')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="sa-btn sa-btn-danger sa-btn-sm" title="Butunlay o'chirish">
+                                    <i class="fas fa-trash-can"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:36px;color:var(--sa-muted);">
+        <i class="fas fa-key" style="font-size:36px;margin-bottom:12px;opacity:0.5;"></i>
+        <p style="margin:0;font-weight:600;">Hozircha hech qanday API kalit yaratilmagan.</p>
+        <p style="font-size:13px;margin-top:4px;">Yuqoridagi formadan foydalanib yangi kalit yarating.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Live Preview of Top Ranking Output -->
+<div class="sa-card">
+    <div class="sa-card-title"><i class="fas fa-eye"></i> Reyting Ko‘rinishi Namunasi (Top Readers & Borrowers)</div>
+    <p style="color:var(--sa-muted);font-size:13px;margin-bottom:16px;">
+        Tashqi sayt API orqali quyidagi ma’lumotlarni qabul qilib oladi:
+    </p>
+
+    {% if ranking_preview %}
+    <div style="overflow-x:auto;">
+        <table class="sa-table" style="width:100%;border-collapse:collapse;">
+            <thead>
+                <tr style="border-bottom:1px solid var(--sa-border);">
+                    <th style="padding:10px 12px;color:var(--sa-muted);font-size:11px;text-align:center;">O‘rin</th>
+                    <th style="padding:10px 12px;color:var(--sa-muted);font-size:11px;text-align:left;">F.I.SH</th>
+                    <th style="padding:10px 12px;color:var(--sa-muted);font-size:11px;text-align:left;">Pasport Raqami</th>
+                    <th style="padding:10px 12px;color:var(--sa-muted);font-size:11px;text-align:left;">Fakultet / Guruh</th>
+                    <th style="padding:10px 12px;color:var(--sa-muted);font-size:11px;text-align:center;">Sahifalar</th>
+                    <th style="padding:10px 12px;color:var(--sa-muted);font-size:11px;text-align:center;">Olingan / Qaytarilgan</th>
+                    <th style="padding:10px 12px;color:var(--sa-muted);font-size:11px;text-align:center;">Umumiy Ball</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in ranking_preview %}
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <td style="padding:10px 12px;text-align:center;font-weight:700;color:#fdcb6e;">#{{ r.rank }}</td>
+                    <td style="padding:10px 12px;font-weight:600;color:var(--sa-text);">{{ r.fullname }}</td>
+                    <td style="padding:10px 12px;">
+                        {% if r.passport_number %}
+                            <code style="color:#00cec9;background:rgba(0,206,201,0.1);padding:2px 6px;border-radius:4px;">{{ r.passport_number }}</code>
+                        {% else %}
+                            <span style="color:var(--sa-muted);font-size:11px;">Mavjud emas</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding:10px 12px;font-size:12px;color:var(--sa-muted);">{{ r.faculty }} / {{ r.group }}</td>
+                    <td style="padding:10px 12px;text-align:center;font-weight:600;color:var(--sa-text);">{{ r.analytics.pages_read }}</td>
+                    <td style="padding:10px 12px;text-align:center;font-size:12px;color:var(--sa-text);">{{ r.analytics.books_borrowed }} / {{ r.analytics.books_returned }}</td>
+                    <td style="padding:10px 12px;text-align:center;font-weight:800;color:#6c5ce7;font-size:14px;">{{ r.total_score }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p style="color:var(--sa-muted);margin:0;">Talabalar ma’lumotlari mavjud emas.</p>
+    {% endif %}
+</div>
+
+<script>
+function copyText(text, btn) {
+    navigator.clipboard.writeText(text).then(function() {
+        const origHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check" style="color:#00b894;"></i> Nusxalandi!';
+        setTimeout(function() {
+            btn.innerHTML = origHtml;
+        }, 2000);
+    }).catch(function() {
+        alert("Nusxalab bo'lmadi, qo'lda ko'chirib oling: " + text);
+    });
+}
+</script>
+{% endblock %}

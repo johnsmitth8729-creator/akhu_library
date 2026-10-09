@@ -198,11 +198,25 @@ def login():
         return redirect(url_for("main.home"))
     form = LoginForm()
     if form.validate_on_submit():
-        identifier = form.email.data.strip().lower()
+        raw_ident = form.email.data.strip()
+        cleaned_passport = "".join(raw_ident.split()).upper()
+        from sqlalchemy import func
         user = User.query.filter(
-            (User.email == identifier) | (User.username == form.email.data.strip())
+            (User.email == raw_ident.lower())
+            | (func.upper(User.username) == raw_ident.upper())
+            | (func.upper(func.replace(User.passport_number, " ", "")) == cleaned_passport)
         ).first()
-        if user and user.check_password(form.password.data):
+
+        pwd = form.password.data or ""
+        pwd_matches = False
+        if user:
+            pwd_matches = (
+                user.check_password(pwd)
+                or user.check_password(pwd.strip())
+                or user.check_password(pwd.strip().upper())
+            )
+
+        if user and pwd_matches:
             if user.is_blocked:
 
                 flash(

@@ -16,22 +16,37 @@ EXPECTED_HEADERS = {
     "full name": "fullname",
     "fullname": "fullname",
     "name": "fullname",
+    "ism familiya": "fullname",
+    "fio": "fullname",
+    "f.i.o": "fullname",
     "email": "email",
     "email address": "email",
+    "pochta": "email",
+    "elektron pochta": "email",
     "phone number": "phone",
     "phone": "phone",
     "telefon": "phone",
+    "telefon raqam": "phone",
+    "telefon raqami": "phone",
     "group": "group",
     "guruh": "group",
+    "guruh nomi": "group",
     "passport": "passport",
     "passport number": "passport",
     "passport id": "passport",
     "passport series": "passport",
     "passport series & number": "passport",
+    "passport series and number": "passport",
     "pasport": "passport",
     "pasport raqam": "passport",
+    "pasport raqami": "passport",
     "pasport seriya": "passport",
     "pasport seria": "passport",
+    "pasport seriya raqam": "passport",
+    "pasport seria raqam": "passport",
+    "pasport seriya va raqam": "passport",
+    "pasport seria va raqam": "passport",
+    "pasport seriyasi va raqami": "passport",
 }
 
 
@@ -144,18 +159,18 @@ def parse_excel_file(file_bytes: bytes, filename: str, faculty_id: int) -> Impor
         raise ValueError("The Excel file is empty.")
 
     header_mapping = _map_headers(raw_rows[0])
-    required_fields = {"fullname", "email", "phone", "group"}
+    required_fields = {"fullname", "email", "phone", "group", "passport"}
     if not required_fields.issubset(set(header_mapping.values())):
         raise ValueError(
             "Invalid Excel structure. Required columns: "
-            "Full Name, Email Address, Phone Number, Group."
+            "Full Name, Email Address, Phone Number, Group, Passport Series & Number."
         )
 
     preview = ImportPreview(faculty_id=faculty.id, faculty_name=faculty.name)
     seen_phones: set[str] = set()
     seen_emails: set[str] = set()
     seen_passports: set[str] = set()
-    reserved_usernames: set[str] = set()
+    seen_usernames: set[str] = set()
     existing_phones = {
         normalize_phone(phone)
         for phone, in db.session.query(User.phone_number).filter(User.phone_number.isnot(None)).all()
@@ -170,6 +185,11 @@ def parse_excel_file(file_bytes: bytes, filename: str, faculty_id: int) -> Impor
         "".join(passport.split()).upper()
         for passport, in db.session.query(User.passport_number).filter(User.passport_number.isnot(None)).all()
         if passport and passport.strip()
+    }
+    existing_usernames = {
+        u.strip().upper()
+        for u, in db.session.query(User.username).all()
+        if u and u.strip()
     }
 
     for offset, raw in enumerate(raw_rows[1:], start=2):
@@ -189,20 +209,31 @@ def parse_excel_file(file_bytes: bytes, filename: str, faculty_id: int) -> Impor
         raw_passport = values.get("passport", "").strip()
         row.passport = "".join(raw_passport.split()).upper() if raw_passport else ""
 
-        if row.passport:
-            if row.passport in seen_passports:
-                row.status = "error"
-                row.message = "Duplicate passport series & number in this file."
-                preview.rows.append(row)
-                continue
+        if not row.passport:
+            row.status = "error"
+            row.message = "Passport series and number is required."
+            preview.rows.append(row)
+            continue
 
-            if row.passport in existing_passports:
-                row.status = "error"
-                row.message = "Passport series & number already registered."
-                preview.rows.append(row)
-                continue
+        if row.passport in seen_passports:
+            row.status = "error"
+            row.message = "Duplicate passport in this file."
+            preview.rows.append(row)
+            continue
 
-            seen_passports.add(row.passport)
+        if row.passport in existing_passports:
+            row.status = "error"
+            row.message = "Passport already registered."
+            preview.rows.append(row)
+            continue
+
+        if row.passport in seen_usernames or row.passport in existing_usernames:
+            row.status = "error"
+            row.message = "Username already exists in the system."
+            preview.rows.append(row)
+            continue
+
+        row.username = row.passport
 
         if not row.fullname:
             row.status = "error"
@@ -267,14 +298,8 @@ def parse_excel_file(file_bytes: bytes, filename: str, faculty_id: int) -> Impor
 
         seen_phones.add(normalized_phone)
         seen_emails.add(row.email)
-        base_username = build_username_base(row.fullname, row.phone)
-        try:
-            row.username = reserve_username(base_username, reserved_usernames)
-        except ValueError:
-            row.status = "error"
-            row.message = "Could not generate a unique username."
-            preview.rows.append(row)
-            continue
+        seen_passports.add(row.passport)
+        seen_usernames.add(row.username)
 
         row.status = "valid"
         row.message = "Ready to import"
@@ -362,7 +387,8 @@ def commit_import(preview: ImportPreview, password: str | None = None) -> Import
             )
             continue
 
-        if User.query.filter_by(username=row.username).first():
+        from sqlalchemy import func
+        if User.query.filter(func.upper(User.username) == row.username.upper()).first():
             result.skipped += 1
             result.report_rows.append(
                 {
@@ -385,7 +411,6 @@ def commit_import(preview: ImportPreview, password: str | None = None) -> Import
             continue
 
         if row.passport:
-            from sqlalchemy import func
             norm_passport = "".join(row.passport.split()).upper()
             if User.query.filter(func.upper(func.replace(User.passport_number, " ", "")) == norm_passport).first():
                 result.skipped += 1
@@ -414,7 +439,8 @@ def commit_import(preview: ImportPreview, password: str | None = None) -> Import
             role=User.ROLE_USER,
             email_verified=False,
         )
-        user.set_password(temp_password)
+        initial_password = passport_number or temp_password
+        user.set_password(initial_password)
         db.session.add(user)
         result.created += 1
         result.report_rows.append(

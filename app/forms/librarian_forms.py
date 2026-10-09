@@ -46,6 +46,14 @@ class ManualUserForm(FlaskForm):
     )
     submit = SubmitField("Create User")
 
+    def validate_passport_number(self, field):
+        if (field.data or "").strip():
+            p_val = "".join(field.data.split()).upper()
+            from sqlalchemy import func
+            from app.models.user import User
+            if User.query.filter(func.upper(func.replace(User.passport_number, " ", "")) == p_val).first():
+                raise ValidationError("This passport series and number is already registered to another user.")
+
 
 # Backward-compatible alias
 ManualStudentForm = ManualUserForm

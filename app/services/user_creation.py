@@ -41,6 +41,12 @@ def create_user_account(
     if not email:
         raise ValueError("Email address is required.")
 
+    if passport_number:
+        passport_number = "".join(passport_number.split()).upper()
+        from sqlalchemy import func
+        if User.query.filter(func.upper(func.replace(User.passport_number, " ", "")) == passport_number).first():
+            raise ValueError("This passport series and number is already registered to another user.")
+
     if not group_name:
         raise ValueError("Group is required.")
 

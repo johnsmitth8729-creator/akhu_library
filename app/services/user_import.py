@@ -154,6 +154,7 @@ def parse_excel_file(file_bytes: bytes, filename: str, faculty_id: int) -> Impor
     preview = ImportPreview(faculty_id=faculty.id, faculty_name=faculty.name)
     seen_phones: set[str] = set()
     seen_emails: set[str] = set()
+    seen_passports: set[str] = set()
     reserved_usernames: set[str] = set()
     existing_phones = {
         normalize_phone(phone)
@@ -164,6 +165,11 @@ def parse_excel_file(file_bytes: bytes, filename: str, faculty_id: int) -> Impor
         _normalize_email(email)
         for email, in db.session.query(User.email).all()
         if email
+    }
+    existing_passports = {
+        "".join(passport.split()).upper()
+        for passport, in db.session.query(User.passport_number).filter(User.passport_number.isnot(None)).all()
+        if passport and passport.strip()
     }
 
     for offset, raw in enumerate(raw_rows[1:], start=2):
@@ -180,7 +186,23 @@ def parse_excel_file(file_bytes: bytes, filename: str, faculty_id: int) -> Impor
         row.email = _normalize_email(values.get("email", ""))
         row.phone = values.get("phone", "")
         row.group = values.get("group", "")
-        row.passport = values.get("passport", "").strip()
+        raw_passport = values.get("passport", "").strip()
+        row.passport = "".join(raw_passport.split()).upper() if raw_passport else ""
+
+        if row.passport:
+            if row.passport in seen_passports:
+                row.status = "error"
+                row.message = "Duplicate passport series & number in this file."
+                preview.rows.append(row)
+                continue
+
+            if row.passport in existing_passports:
+                row.status = "error"
+                row.message = "Passport series & number already registered."
+                preview.rows.append(row)
+                continue
+
+            seen_passports.add(row.passport)
 
         if not row.fullname:
             row.status = "error"
@@ -362,12 +384,30 @@ def commit_import(preview: ImportPreview, password: str | None = None) -> Import
             )
             continue
 
+        if row.passport:
+            from sqlalchemy import func
+            norm_passport = "".join(row.passport.split()).upper()
+            if User.query.filter(func.upper(func.replace(User.passport_number, " ", "")) == norm_passport).first():
+                result.skipped += 1
+                row.status = "error"
+                row.message = "Passport series & number already registered."
+                result.report_rows.append(
+                    {
+                        "row": row.row_number,
+                        "name": row.fullname,
+                        "reason": row.message,
+                    }
+                )
+                continue
+
+        passport_number = "".join(row.passport.split()).upper() if row.passport else None
+
         user = User(
             fullname=row.fullname.strip(),
             username=row.username,
             email=row.email,
             phone_number=normalized_phone,
-            passport_number=row.passport or None,
+            passport_number=passport_number,
             faculty_id=faculty.id,
             faculty=faculty.name,
             group_name=row.group.strip(),

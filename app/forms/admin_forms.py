@@ -71,6 +71,16 @@ class AdminUserForm(FlaskForm):
         if not super().validate(extra_validators=extra_validators):
             return False
 
+        if (self.passport_number.data or "").strip():
+            p_val = "".join(self.passport_number.data.split()).upper()
+            from sqlalchemy import func
+            from app.models.user import User
+            existing = User.query.filter(func.upper(func.replace(User.passport_number, " ", "")) == p_val).first()
+            current_id = getattr(self, "current_user_id", None)
+            if existing and existing.id != current_id:
+                self.passport_number.errors.append("This passport series and number is already registered to another user.")
+                return False
+
         if self.role.data == "user":
             is_valid = True
 

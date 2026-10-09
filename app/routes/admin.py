@@ -647,7 +647,8 @@ def create_user():
         username = form.username.data.strip()
         phone_raw = (form.phone_number.data or "").strip()
         phone_number = normalize_phone(phone_raw) if phone_raw else None
-        passport_number = (form.passport_number.data or "").strip() or None
+        passport_raw = (form.passport_number.data or "").strip()
+        passport_number = "".join(passport_raw.split()).upper() if passport_raw else None
         role = form.role.data
         faculty_id = form.faculty_id.data or None
         group_name = (form.group_name.data or "").strip() or None
@@ -659,6 +660,12 @@ def create_user():
         if phone_number and User.query.filter_by(phone_number=phone_number).first():
             flash("Phone number already in use.", "danger")
             return render_template("admin/user_form.html", form=form, title="Add User", mode="create")
+
+        if passport_number:
+            from sqlalchemy import func
+            if User.query.filter(func.upper(func.replace(User.passport_number, " ", "")) == passport_number).first():
+                flash("Passport series and number already in use by another account.", "danger")
+                return render_template("admin/user_form.html", form=form, title="Add User", mode="create")
 
         if User.query.filter(
             (User.email == email) | (User.username == username)
@@ -705,6 +712,7 @@ def edit_user(user_id):
     if user.is_superadmin:
         abort(403)
     form = AdminEditUserForm(obj=user)
+    form.current_user_id = user.id
     load_faculty_choices(form)
     if request.method == "GET":
         form.faculty_id.data = user.faculty_id or 0
@@ -714,6 +722,8 @@ def edit_user(user_id):
         username = form.username.data.strip()
         phone_raw = (form.phone_number.data or "").strip()
         phone_number = normalize_phone(phone_raw) if phone_raw else None
+        passport_raw = (form.passport_number.data or "").strip()
+        passport_number = "".join(passport_raw.split()).upper() if passport_raw else None
         role = form.role.data
         faculty_id = form.faculty_id.data or None
         group_name = (form.group_name.data or "").strip() or None
@@ -747,6 +757,23 @@ def edit_user(user_id):
                 default_password_hint=default_temp_password(),
             )
 
+        if passport_number:
+            from sqlalchemy import func
+            passport_duplicate = User.query.filter(
+                User.id != user.id,
+                func.upper(func.replace(User.passport_number, " ", "")) == passport_number,
+            ).first()
+            if passport_duplicate:
+                flash("Passport series and number already in use by another account.", "danger")
+                return render_template(
+                    "admin/user_form.html",
+                    form=form,
+                    title="Edit User",
+                    mode="edit",
+                    user=user,
+                    default_password_hint=default_temp_password(),
+                )
+
         if user.id == current_user.id and form.role.data != user.role:
             flash("You cannot change your own role.", "warning")
             return render_template(
@@ -762,7 +789,7 @@ def edit_user(user_id):
         user.username = username
         user.email = email
         user.phone_number = phone_number
-        user.passport_number = (form.passport_number.data or "").strip() or None
+        user.passport_number = passport_number
         user.group_name = group_name
         user.role = role
 

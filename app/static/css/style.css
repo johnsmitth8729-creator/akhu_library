@@ -4720,14 +4720,18 @@ textarea:focus,
 }
 
 .auth-container::before {
-    content: "Al-Khwarizmi Smart Library";
+    content: "Al\2011Khwarizmi\A Smart Library";
+    white-space: pre-line;
     align-self: center;
-    max-width: 560px;
+    max-width: 620px;
     color: #ffffff;
     font-family: "Poppins", "Inter", sans-serif;
-    font-size: clamp(2.4rem, 5vw, 5rem);
+    font-size: clamp(2.2rem, 4vw, 4.4rem);
     font-weight: 800;
-    line-height: 1.03;
+    line-height: 1.1;
+    word-break: keep-all;
+    overflow-wrap: normal;
+    hyphens: none;
 }
 
 .auth-card {

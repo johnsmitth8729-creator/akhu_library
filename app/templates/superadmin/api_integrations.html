@@ -57,16 +57,23 @@
     <div class="sa-card">
         <div class="sa-card-title"><i class="fas fa-book-open"></i> API Bog‘lanish Ko‘rsatmalari</div>
         <div style="font-size:13px;color:var(--sa-muted);line-height:1.6;">
-            <p style="margin-bottom:10px;">
+            <p style="margin-bottom:8px;">
                 <strong style="color:var(--sa-text);"><i class="fas fa-id-card text-primary"></i> Pasport orqali moslashtirish:</strong>
-                Har bir talabaning pasport seriya raqami (<code style="color:#00cec9;">passport_number</code>) unique kalit hisoblanadi.
+                Talabaning pasport raqami (<code style="color:#00cec9;">passport_number</code>) barcha tizimlarda yagona unique kalit hisoblanadi.
             </p>
-            <div style="background:rgba(0,0,0,0.25);border:1px solid var(--sa-border);border-radius:8px;padding:12px;margin-bottom:12px;font-family:monospace;font-size:12px;color:#dfe6e9;overflow-x:auto;">
-                <div><span style="color:#74b9ff;">GET</span> {{ base_api_url }}/api/rankings/students?api_key=KEY</div>
-                <div style="margin-top:4px;"><span style="color:#74b9ff;">GET</span> {{ base_api_url }}/api/rankings/student/&lt;passport_number&gt;?api_key=KEY</div>
+            <div style="background:rgba(0,0,0,0.3);border:1px solid var(--sa-border);border-radius:8px;padding:12px;margin-bottom:10px;font-family:monospace;font-size:12px;color:#dfe6e9;line-height:1.8;">
+                <div style="color:#fdcb6e;font-weight:700;font-size:11px;margin-bottom:4px;text-transform:uppercase;">1. Kitobxonlik Reytingi:</div>
+                <div><span style="color:#74b9ff;">GET</span> {{ base_api_url }}/api/rankings/students?api_key=KEY&limit=100</div>
+                <div><span style="color:#74b9ff;">GET</span> {{ base_api_url }}/api/rankings/student/&lt;passport_number&gt;?api_key=KEY</div>
+                
+                <div style="color:#00cec9;font-weight:700;font-size:11px;margin-top:8px;margin-bottom:4px;text-transform:uppercase;">2. Tanlovlar (Competitions) Reytingi & Statistikasi:</div>
+                <div><span style="color:#74b9ff;">GET</span> {{ base_api_url }}/api/competitions/rankings?api_key=KEY</div>
+                <div><span style="color:#74b9ff;">GET</span> {{ base_api_url }}/api/competitions/&lt;comp_id&gt;/ranking?api_key=KEY</div>
+                <div><span style="color:#74b9ff;">GET</span> {{ base_api_url }}/api/competitions/student/&lt;passport_number&gt;?api_key=KEY</div>
+                <div><span style="color:#74b9ff;">GET</span> {{ base_api_url }}/api/competitions/leaderboard/overall?api_key=KEY</div>
             </div>
             <p style="margin:0;font-size:12px;color:var(--sa-muted);">
-                <i class="fas fa-shield-halved"></i> <strong>CORS qo‘llab-quvvatlanadi:</strong> Boshqa sayt to‘g‘ridan-to‘g‘ri brauzer orqali JavaScript <code>fetch()</code> qilishi mumkin.
+                <i class="fas fa-shield-halved text-success"></i> <strong>CORS qo‘llab-quvvatlanadi:</strong> Boshqa veb-saytlar to‘g‘ridan-to‘g‘ri brauzerdan JavaScript <code>fetch()</code> orqali so‘rov yuborishi mumkin.
             </p>
         </div>
     </div>
@@ -156,51 +163,196 @@
     {% endif %}
 </div>
 
-<!-- Live Preview of Top Ranking Output -->
-<div class="sa-card">
-    <div class="sa-card-title"><i class="fas fa-eye"></i> Reyting Ko‘rinishi Namunasi (Top Readers & Borrowers)</div>
-    <p style="color:var(--sa-muted);font-size:13px;margin-bottom:16px;">
-        Tashqi sayt API orqali quyidagi ma’lumotlarni qabul qilib oladi:
-    </p>
+<!-- Live Previews Grid -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+    <!-- Live Preview of Top Ranking Output -->
+    <div class="sa-card">
+        <div class="sa-card-title"><i class="fas fa-book-reader"></i> Kitobxon Talabalar Reytingi (Preview)</div>
+        <p style="color:var(--sa-muted);font-size:12px;margin-bottom:12px;">
+            <code>GET /api/rankings/students</code> qaytaradigan umumiy reyting ma'lumotlari:
+        </p>
 
-    {% if ranking_preview %}
-    <div style="overflow-x:auto;">
-        <table class="sa-table" style="width:100%;border-collapse:collapse;">
-            <thead>
-                <tr style="border-bottom:1px solid var(--sa-border);">
-                    <th style="padding:10px 12px;color:var(--sa-muted);font-size:11px;text-align:center;">O‘rin</th>
-                    <th style="padding:10px 12px;color:var(--sa-muted);font-size:11px;text-align:left;">F.I.SH</th>
-                    <th style="padding:10px 12px;color:var(--sa-muted);font-size:11px;text-align:left;">Pasport Raqami</th>
-                    <th style="padding:10px 12px;color:var(--sa-muted);font-size:11px;text-align:left;">Fakultet / Guruh</th>
-                    <th style="padding:10px 12px;color:var(--sa-muted);font-size:11px;text-align:center;">Sahifalar</th>
-                    <th style="padding:10px 12px;color:var(--sa-muted);font-size:11px;text-align:center;">Olingan / Qaytarilgan</th>
-                    <th style="padding:10px 12px;color:var(--sa-muted);font-size:11px;text-align:center;">Umumiy Ball</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for r in ranking_preview %}
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-                    <td style="padding:10px 12px;text-align:center;font-weight:700;color:#fdcb6e;">#{{ r.rank }}</td>
-                    <td style="padding:10px 12px;font-weight:600;color:var(--sa-text);">{{ r.fullname }}</td>
-                    <td style="padding:10px 12px;">
-                        {% if r.passport_number %}
-                            <code style="color:#00cec9;background:rgba(0,206,201,0.1);padding:2px 6px;border-radius:4px;">{{ r.passport_number }}</code>
-                        {% else %}
-                            <span style="color:var(--sa-muted);font-size:11px;">Mavjud emas</span>
-                        {% endif %}
-                    </td>
-                    <td style="padding:10px 12px;font-size:12px;color:var(--sa-muted);">{{ r.faculty }} / {{ r.group }}</td>
-                    <td style="padding:10px 12px;text-align:center;font-weight:600;color:var(--sa-text);">{{ r.analytics.pages_read }}</td>
-                    <td style="padding:10px 12px;text-align:center;font-size:12px;color:var(--sa-text);">{{ r.analytics.books_borrowed }} / {{ r.analytics.books_returned }}</td>
-                    <td style="padding:10px 12px;text-align:center;font-weight:800;color:#6c5ce7;font-size:14px;">{{ r.total_score }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        {% if ranking_preview %}
+        <div style="overflow-x:auto;">
+            <table class="sa-table" style="width:100%;border-collapse:collapse;font-size:12px;">
+                <thead>
+                    <tr style="border-bottom:1px solid var(--sa-border);">
+                        <th style="padding:8px 10px;color:var(--sa-muted);text-align:center;">O‘rin</th>
+                        <th style="padding:8px 10px;color:var(--sa-muted);text-align:left;">F.I.SH</th>
+                        <th style="padding:8px 10px;color:var(--sa-muted);text-align:left;">Pasport</th>
+                        <th style="padding:8px 10px;color:var(--sa-muted);text-align:center;">Sahifa</th>
+                        <th style="padding:8px 10px;color:var(--sa-muted);text-align:center;">Kitoblar</th>
+                        <th style="padding:8px 10px;color:var(--sa-muted);text-align:center;">Ball</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in ranking_preview %}
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <td style="padding:8px 10px;text-align:center;font-weight:700;color:#fdcb6e;">#{{ r.rank }}</td>
+                        <td style="padding:8px 10px;font-weight:600;color:var(--sa-text);">{{ r.fullname }}</td>
+                        <td style="padding:8px 10px;">
+                            {% if r.passport_number %}
+                                <code style="color:#00cec9;background:rgba(0,206,201,0.1);padding:1px 5px;border-radius:4px;font-size:11px;">{{ r.passport_number }}</code>
+                            {% else %}
+                                <span style="color:var(--sa-muted);font-size:11px;">—</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding:8px 10px;text-align:center;color:var(--sa-text);">{{ r.analytics.pages_read }}</td>
+                        <td style="padding:8px 10px;text-align:center;font-size:11px;color:var(--sa-text);">{{ r.analytics.books_borrowed }} / {{ r.analytics.books_returned }}</td>
+                        <td style="padding:8px 10px;text-align:center;font-weight:800;color:#6c5ce7;">{{ r.total_score }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p style="color:var(--sa-muted);margin:0;font-size:12px;">Kitobxonlik ma’lumotlari mavjud emas.</p>
+        {% endif %}
     </div>
-    {% else %}
-    <p style="color:var(--sa-muted);margin:0;">Talabalar ma’lumotlari mavjud emas.</p>
-    {% endif %}
+
+    <!-- Live Preview of Competitions Leaderboard -->
+    <div class="sa-card">
+        <div class="sa-card-title"><i class="fas fa-trophy" style="color:#fdcb6e;"></i> Tanlovlar Chempionlari (Preview)</div>
+        <p style="color:var(--sa-muted);font-size:12px;margin-bottom:12px;">
+            <code>GET /api/competitions/leaderboard/overall</code> qaytaradigan sovrindorlar ro'yxati:
+        </p>
+
+        {% if competitions_preview %}
+        <div style="overflow-x:auto;">
+            <table class="sa-table" style="width:100%;border-collapse:collapse;font-size:12px;">
+                <thead>
+                    <tr style="border-bottom:1px solid var(--sa-border);">
+                        <th style="padding:8px 10px;color:var(--sa-muted);text-align:center;">O‘rin</th>
+                        <th style="padding:8px 10px;color:var(--sa-muted);text-align:left;">F.I.SH</th>
+                        <th style="padding:8px 10px;color:var(--sa-muted);text-align:left;">Pasport</th>
+                        <th style="padding:8px 10px;color:var(--sa-muted);text-align:center;">Medallar</th>
+                        <th style="padding:8px 10px;color:var(--sa-muted);text-align:center;">Tanlovlar</th>
+                        <th style="padding:8px 10px;color:var(--sa-muted);text-align:center;">Reyting</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in competitions_preview %}
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <td style="padding:8px 10px;text-align:center;font-weight:700;color:#fdcb6e;">#{{ c.rank }}</td>
+                        <td style="padding:8px 10px;font-weight:600;color:var(--sa-text);">{{ c.fullname }}</td>
+                        <td style="padding:8px 10px;">
+                            {% if c.passport_number %}
+                                <code style="color:#00cec9;background:rgba(0,206,201,0.1);padding:1px 5px;border-radius:4px;font-size:11px;">{{ c.passport_number }}</code>
+                            {% else %}
+                                <span style="color:var(--sa-muted);font-size:11px;">—</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding:8px 10px;text-align:center;">
+                            {% if c.medals.gold %}<span title="Oltin" style="color:#f1c40f;">🥇{{ c.medals.gold }}</span>{% endif %}
+                            {% if c.medals.silver %}<span title="Kumush" style="color:#bdc3c7;">🥈{{ c.medals.silver }}</span>{% endif %}
+                            {% if c.medals.bronze %}<span title="Bronza" style="color:#e67e22;">🥉{{ c.medals.bronze }}</span>{% endif %}
+                            {% if not c.medals.total %}<span style="color:var(--sa-muted);font-size:11px;">0</span>{% endif %}
+                        </td>
+                        <td style="padding:8px 10px;text-align:center;color:var(--sa-text);">{{ c.competitions_completed }} ta</td>
+                        <td style="padding:8px 10px;text-align:center;font-weight:800;color:#00b894;">{{ c.competition_rating }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="text-align:center;padding:24px 12px;color:var(--sa-muted);font-size:12px;">
+            <i class="fas fa-award" style="font-size:24px;margin-bottom:6px;opacity:0.4;"></i>
+            <p style="margin:0;">Hozircha tanlovlarda yakunlangan urinishlar yo‘q.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- API Endpoints Technical Reference Card -->
+<div class="sa-card" style="margin-bottom:24px;">
+    <div class="sa-card-title"><i class="fas fa-terminal"></i> API Texnik Hujjatlari & Endpointlar</div>
+    
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:16px;margin-top:14px;">
+        <!-- Endpoint 1 -->
+        <div style="background:rgba(255,255,255,0.02);border:1px solid var(--sa-border);border-radius:8px;padding:14px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <span style="background:rgba(9,132,227,0.2);color:#74b9ff;padding:2px 6px;border-radius:4px;font-weight:700;font-size:11px;">GET</span>
+                <code style="font-size:12px;color:#dfe6e9;">/api/rankings/students</code>
+            </div>
+            <p style="font-size:12px;color:var(--sa-muted);margin-bottom:8px;">
+                Kitobxon talabalarning umumiy reytingi (Top Readers & Borrowers birlashtirilgan). Parametrlar: <code>limit</code> (masalan, <code>?limit=50</code>).
+            </p>
+            <div style="font-size:11px;color:#a29bfe;background:rgba(0,0,0,0.25);padding:6px 8px;border-radius:4px;font-family:monospace;">
+                curl -H "X-API-Key: KALIT" "{{ base_api_url }}/api/rankings/students?limit=50"
+            </div>
+        </div>
+
+        <!-- Endpoint 2 -->
+        <div style="background:rgba(255,255,255,0.02);border:1px solid var(--sa-border);border-radius:8px;padding:14px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <span style="background:rgba(9,132,227,0.2);color:#74b9ff;padding:2px 6px;border-radius:4px;font-weight:700;font-size:11px;">GET</span>
+                <code style="font-size:12px;color:#dfe6e9;">/api/rankings/student/{passport}</code>
+            </div>
+            <p style="font-size:12px;color:var(--sa-muted);margin-bottom:8px;">
+                Bitta talabaning kitobxonlik ko'rsatkichlari, mutolaa sahifalari, kitoblar tarixi va uning umumiy reytingdagi o'rni.
+            </p>
+            <div style="font-size:11px;color:#a29bfe;background:rgba(0,0,0,0.25);padding:6px 8px;border-radius:4px;font-family:monospace;">
+                curl -H "X-API-Key: KALIT" "{{ base_api_url }}/api/rankings/student/AD9456428"
+            </div>
+        </div>
+
+        <!-- Endpoint 3 -->
+        <div style="background:rgba(255,255,255,0.02);border:1px solid var(--sa-border);border-radius:8px;padding:14px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <span style="background:rgba(0,184,148,0.2);color:#00cec9;padding:2px 6px;border-radius:4px;font-weight:700;font-size:11px;">GET</span>
+                <code style="font-size:12px;color:#dfe6e9;">/api/competitions/rankings</code>
+            </div>
+            <p style="font-size:12px;color:var(--sa-muted);margin-bottom:8px;">
+                Tanlovlar ro'yxati, ishtirokchilar va urinishlar soni, va har bir tanlovning TOP 3 g'oliblari (pasport raqami bilan).
+            </p>
+            <div style="font-size:11px;color:#a29bfe;background:rgba(0,0,0,0.25);padding:6px 8px;border-radius:4px;font-family:monospace;">
+                curl -H "X-API-Key: KALIT" "{{ base_api_url }}/api/competitions/rankings?status=active"
+            </div>
+        </div>
+
+        <!-- Endpoint 4 -->
+        <div style="background:rgba(255,255,255,0.02);border:1px solid var(--sa-border);border-radius:8px;padding:14px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <span style="background:rgba(0,184,148,0.2);color:#00cec9;padding:2px 6px;border-radius:4px;font-weight:700;font-size:11px;">GET</span>
+                <code style="font-size:12px;color:#dfe6e9;">/api/competitions/{id}/ranking</code>
+            </div>
+            <p style="font-size:12px;color:var(--sa-muted);margin-bottom:8px;">
+                Aynan bitta tanlovning to'liq ishtirokchilar reytingi, o'rtacha ball, o'tish foizi va sertifikat verifikatsiya kodlari.
+            </p>
+            <div style="font-size:11px;color:#a29bfe;background:rgba(0,0,0,0.25);padding:6px 8px;border-radius:4px;font-family:monospace;">
+                curl -H "X-API-Key: KALIT" "{{ base_api_url }}/api/competitions/1/ranking"
+            </div>
+        </div>
+
+        <!-- Endpoint 5 -->
+        <div style="background:rgba(255,255,255,0.02);border:1px solid var(--sa-border);border-radius:8px;padding:14px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <span style="background:rgba(0,184,148,0.2);color:#00cec9;padding:2px 6px;border-radius:4px;font-weight:700;font-size:11px;">GET</span>
+                <code style="font-size:12px;color:#dfe6e9;">/api/competitions/student/{passport}</code>
+            </div>
+            <p style="font-size:12px;color:var(--sa-muted);margin-bottom:8px;">
+                Talabaning tanlovlardagi yutuqlari, medallar (🥇🥈🥉), nishonlar, sertifikatlar va barcha tanlov urinishlari tarixi.
+            </p>
+            <div style="font-size:11px;color:#a29bfe;background:rgba(0,0,0,0.25);padding:6px 8px;border-radius:4px;font-family:monospace;">
+                curl -H "X-API-Key: KALIT" "{{ base_api_url }}/api/competitions/student/AD9456428"
+            </div>
+        </div>
+
+        <!-- Endpoint 6 -->
+        <div style="background:rgba(255,255,255,0.02);border:1px solid var(--sa-border);border-radius:8px;padding:14px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <span style="background:rgba(0,184,148,0.2);color:#00cec9;padding:2px 6px;border-radius:4px;font-weight:700;font-size:11px;">GET</span>
+                <code style="font-size:12px;color:#dfe6e9;">/api/competitions/leaderboard/overall</code>
+            </div>
+            <p style="font-size:12px;color:var(--sa-muted);margin-bottom:8px;">
+                Universitet bo'yicha barcha tanlovlarning umumiy chempionlar reytingi (medallar va tanlov ballari vazni asosida).
+            </p>
+            <div style="font-size:11px;color:#a29bfe;background:rgba(0,0,0,0.25);padding:6px 8px;border-radius:4px;font-family:monospace;">
+                curl -H "X-API-Key: KALIT" "{{ base_api_url }}/api/competitions/leaderboard/overall?limit=50"
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>

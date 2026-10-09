@@ -988,12 +988,16 @@ def api_integrations():
     from app.services.student_ranking_service import get_student_rankings
     preview = get_student_rankings(limit=5)
 
+    from app.services.competition_ranking_service import get_overall_competitions_leaderboard
+    comp_preview = get_overall_competitions_leaderboard(limit=5)
+
     base_api_url = request.url_root.rstrip("/")
     return render_template(
         "superadmin/api_integrations.html",
         api_keys=keys,
         ranking_preview=preview.get("rankings", []),
         total_students=preview.get("total_students", 0),
+        competitions_preview=comp_preview.get("leaderboard", []),
         base_api_url=base_api_url,
     )
 

@@ -141,3 +141,97 @@ def get_single_student_ranking(passport_number):
     status_code = 200 if data.get("found", True) else 404
     return _cors_response(data, status_code=status_code)
 
+
+# ---------------------------------------------------------------------------
+# Reading Competitions Rankings & Statistics External API
+# ---------------------------------------------------------------------------
+
+@api_bp.route("/competitions/rankings", methods=["GET", "OPTIONS"])
+def get_competitions_rankings():
+    """
+    List competitions summary with participation statistics and top winners.
+    Query params:
+      - limit: optional int
+      - status: optional ('active', 'published', 'closed')
+    """
+    if request.method == "OPTIONS":
+        return _cors_response({"status": "ok"})
+
+    api_key, error_response = _validate_api_key()
+    if error_response:
+        return error_response
+
+    from app.services.competition_ranking_service import get_competitions_rankings_summary
+    limit_arg = request.args.get("limit", type=int)
+    status_arg = request.args.get("status", type=str)
+
+    data = get_competitions_rankings_summary(limit=limit_arg, status_filter=status_arg)
+    data["api_client"] = api_key.name
+    return _cors_response(data)
+
+
+@api_bp.route("/competitions/<int:competition_id>/ranking", methods=["GET", "OPTIONS"])
+def get_competition_ranking_detail(competition_id):
+    """
+    Detailed leaderboard and statistics for a specific competition.
+    Query params:
+      - limit: optional int (leaderboard count)
+    """
+    if request.method == "OPTIONS":
+        return _cors_response({"status": "ok"})
+
+    api_key, error_response = _validate_api_key()
+    if error_response:
+        return error_response
+
+    from app.services.competition_ranking_service import get_competition_detail_ranking
+    limit_arg = request.args.get("limit", type=int)
+
+    data = get_competition_detail_ranking(competition_id=competition_id, limit=limit_arg)
+    data["api_client"] = api_key.name
+    status_code = 200 if data.get("success") else 404
+    return _cors_response(data, status_code=status_code)
+
+
+@api_bp.route("/competitions/student/<path:passport_number>", methods=["GET", "OPTIONS"])
+def get_student_competitions_profile(passport_number):
+    """
+    Student's competition performance, medal counts, badges, certificates, and attempt history.
+    """
+    if request.method == "OPTIONS":
+        return _cors_response({"status": "ok"})
+
+    api_key, error_response = _validate_api_key()
+    if error_response:
+        return error_response
+
+    from app.services.competition_ranking_service import get_student_competition_ranking
+
+    data = get_student_competition_ranking(passport_number=passport_number)
+    data["api_client"] = api_key.name
+    status_code = 200 if data.get("found", True) else 404
+    return _cors_response(data, status_code=status_code)
+
+
+@api_bp.route("/competitions/leaderboard/overall", methods=["GET", "OPTIONS"])
+def get_overall_competitions_leaderboard_route():
+    """
+    University-wide all-time champions leaderboard across all competitions.
+    Query params:
+      - limit: optional int (default: 50)
+    """
+    if request.method == "OPTIONS":
+        return _cors_response({"status": "ok"})
+
+    api_key, error_response = _validate_api_key()
+    if error_response:
+        return error_response
+
+    from app.services.competition_ranking_service import get_overall_competitions_leaderboard
+    limit_arg = request.args.get("limit", default=50, type=int)
+
+    data = get_overall_competitions_leaderboard(limit=limit_arg)
+    data["api_client"] = api_key.name
+    return _cors_response(data)
+
+

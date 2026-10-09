@@ -42,6 +42,10 @@ class AdminUserForm(FlaskForm):
             Regexp(r"^\+?[0-9\s().-]+$", message="Enter a valid phone number.")
         ]
     )
+    passport_number = StringField(
+        "Passport Series & Number",
+        validators=[Optional(), Length(max=30)]
+    )
     faculty_id = SelectField(
         "Faculty",
         coerce=_coerce_faculty_id,

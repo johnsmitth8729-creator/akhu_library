@@ -128,16 +128,8 @@ def register():
     if current_user.is_authenticated:
         return redirect(url_for("main.home"))
 
-    allow_registration = Settings.query.filter_by(
-        key="allow_registration"
-    ).first()
-
-    if (
-        allow_registration
-        and allow_registration.value.lower() != "true"
-    ):
-        flash("Public registration is currently disabled.", "warning")
-        return redirect(url_for("auth.login"))
+    flash("Public registration is disabled. Library accounts are created by administrators.", "warning")
+    return redirect(url_for("auth.login"))
 
     form = RegisterForm()
     load_faculty_choices(form, include_empty=True)

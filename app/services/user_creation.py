@@ -27,11 +27,13 @@ def create_user_account(
     phone_number: str,
     faculty_id: int,
     group_name: str,
+    passport_number: str | None = None,
     password: str | None = None,
 ) -> tuple[User, str]:
     fullname = fullname.strip()
     group_name = group_name.strip()
     email = (email or "").strip().lower()
+    passport_number = (passport_number or "").strip() or None
 
     if not fullname:
         raise ValueError("Full name is required.")
@@ -62,6 +64,7 @@ def create_user_account(
         username=username,
         email=email,
         phone_number=normalized_phone,
+        passport_number=passport_number,
         group_name=group_name,
         role=User.ROLE_USER,
         email_verified=False,

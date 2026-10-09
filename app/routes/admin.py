@@ -487,6 +487,7 @@ def manage_users():
                 User.fullname.ilike(f"%{q}%"),
                 User.email.ilike(f"%{q}%"),
                 User.phone_number.ilike(f"%{q}%"),
+                User.passport_number.ilike(f"%{q}%"),
                 User.faculty.ilike(f"%{q}%"),
                 User.group_name.ilike(f"%{q}%")
             )
@@ -541,6 +542,7 @@ def export_users():
                 User.fullname.ilike(f"%{q}%"),
                 User.email.ilike(f"%{q}%"),
                 User.phone_number.ilike(f"%{q}%"),
+                User.passport_number.ilike(f"%{q}%"),
                 User.faculty.ilike(f"%{q}%"),
                 User.group_name.ilike(f"%{q}%")
             )
@@ -561,7 +563,7 @@ def export_users():
     sheet.title = "Users"
 
     headers = [
-        "ID", "Fullname", "Username", "Email", "Phone Number", "Role",
+        "ID", "Fullname", "Username", "Email", "Phone Number", "Passport Number", "Role",
         "Faculty", "Group", "Status", "Email Verified",
         "Last Login", "Joined"
     ]
@@ -589,6 +591,7 @@ def export_users():
             user.username,
             user.email,
             user.phone_number or "",
+            user.passport_number or "",
             user.role,
             user.faculty_display or "",
             user.group_name or "",
@@ -598,7 +601,7 @@ def export_users():
             user.created_at.strftime("%Y-%m-%d %H:%M") if user.created_at else ""
         ])
 
-    for row in sheet.iter_rows(min_row=2, max_row=sheet.max_row, min_col=1, max_col=12):
+    for row in sheet.iter_rows(min_row=2, max_row=sheet.max_row, min_col=1, max_col=13):
         for cell in row:
             cell.border = thin_border
             cell.alignment = Alignment(vertical="center")
@@ -644,6 +647,7 @@ def create_user():
         username = form.username.data.strip()
         phone_raw = (form.phone_number.data or "").strip()
         phone_number = normalize_phone(phone_raw) if phone_raw else None
+        passport_number = (form.passport_number.data or "").strip() or None
         role = form.role.data
         faculty_id = form.faculty_id.data or None
         group_name = (form.group_name.data or "").strip() or None
@@ -667,6 +671,7 @@ def create_user():
             username=username,
             email=email,
             phone_number=phone_number,
+            passport_number=passport_number,
             group_name=group_name,
             role=role
         )
@@ -757,6 +762,7 @@ def edit_user(user_id):
         user.username = username
         user.email = email
         user.phone_number = phone_number
+        user.passport_number = (form.passport_number.data or "").strip() or None
         user.group_name = group_name
         user.role = role
 

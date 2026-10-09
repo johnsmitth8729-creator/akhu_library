@@ -91,7 +91,7 @@
         <form method="GET" action="{{ url_for('admin.manage_users') }}" class="filter-bar-form-pro" id="search-filter-form">
             <div class="search-shell">
                 <i class="fas fa-search"></i>
-                <input type="text" name="q" value="{{ q or '' }}" placeholder="Search name, email, phone..." aria-label="Search users">
+                <input type="text" name="q" value="{{ q or '' }}" placeholder="Search name, email, phone, passport..." aria-label="Search users">
             </div>
 
             <select id="filter-faculty" aria-label="Filter by Faculty">
@@ -194,6 +194,11 @@
                                         <strong>{{ u.fullname }}</strong>
                                         <span>@{{ u.username }}</span>
                                         <span class="email">{{ u.email }}</span>
+                                        {% if u.passport_number %}
+                                            <span class="passport-meta" style="font-size: 0.75rem; color: #475569; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; margin-top: 3px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 1px 6px; width: fit-content;">
+                                                <i class="fas fa-id-card text-muted"></i> {{ u.passport_number }}
+                                            </span>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </td>
@@ -300,6 +305,11 @@
                             <div class="user-names">
                                 <strong>{{ u.fullname }}</strong>
                                 <span>@{{ u.username }}</span>
+                                {% if u.passport_number %}
+                                    <span style="font-size: 0.72rem; color: #475569; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; margin-top: 2px;">
+                                        <i class="fas fa-id-card text-muted"></i> {{ u.passport_number }}
+                                    </span>
+                                {% endif %}
                             </div>
                         </div>
                     </div>

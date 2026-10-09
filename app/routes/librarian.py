@@ -1296,6 +1296,7 @@ def manage_users():
                 User.fullname.ilike(f"%{q}%"),
                 User.email.ilike(f"%{q}%"),
                 User.phone_number.ilike(f"%{q}%"),
+                User.passport_number.ilike(f"%{q}%"),
                 User.group_name.ilike(f"%{q}%"),
                 User.faculty.ilike(f"%{q}%"),
             )
@@ -1348,6 +1349,7 @@ def add_user():
                     phone_number=form.phone_number.data,
                     faculty_id=form.faculty_id.data,
                     group_name=form.group_name.data,
+                    passport_number=form.passport_number.data,
                 )
                 log_activity(
                     current_user.id,

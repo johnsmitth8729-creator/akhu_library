@@ -153,6 +153,7 @@ a:hover {
     display: flex;
     flex-direction: column;
     line-height: 1.02;
+    white-space: nowrap !important;
 }
 
 .logo-title {
@@ -160,6 +161,9 @@ a:hover {
     font-size: 25px;
     font-weight: 800;
     color: var(--navy);
+    white-space: nowrap !important;
+    word-break: keep-all !important;
+    hyphens: none !important;
 }
 
 .logo-subtitle {
@@ -168,6 +172,7 @@ a:hover {
     font-weight: 800;
     color: var(--gold);
     letter-spacing: 0;
+    white-space: nowrap !important;
 }
 
 .nav-links {
@@ -4071,10 +4076,14 @@ a:hover {
 
     .logo-title {
         font-size: 19px;
+        white-space: nowrap !important;
+        word-break: keep-all !important;
+        hyphens: none !important;
     }
 
     .logo-subtitle {
         font-size: 12px;
+        white-space: nowrap !important;
     }
 
     .hello {
@@ -4446,6 +4455,9 @@ body::before {
 
 .logo-title {
     font-size: 22px;
+    white-space: nowrap !important;
+    word-break: keep-all !important;
+    hyphens: none !important;
 }
 
 .logo-subtitle {
@@ -4453,6 +4465,7 @@ body::before {
     font-size: 13px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+    white-space: nowrap !important;
 }
 
 .nav-links {

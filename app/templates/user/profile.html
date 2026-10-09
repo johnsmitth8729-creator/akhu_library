@@ -90,6 +90,20 @@ Profile
 
                     <div class="profile-info-item-pro">
                         <span>
+                            <i class="fas fa-id-card"></i>
+                            Passport Series & Number
+                        </span>
+                        <strong>
+                            {% if current_user.passport_number %}
+                                {{ current_user.passport_number }}
+                            {% else %}
+                                <span class="muted" style="font-weight: 500; font-size: 0.9rem;">Not provided</span>
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    <div class="profile-info-item-pro">
+                        <span>
                             <i class="fas fa-envelope"></i>
                             Email Address
                         </span>

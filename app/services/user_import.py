@@ -23,6 +23,15 @@ EXPECTED_HEADERS = {
     "telefon": "phone",
     "group": "group",
     "guruh": "group",
+    "passport": "passport",
+    "passport number": "passport",
+    "passport id": "passport",
+    "passport series": "passport",
+    "passport series & number": "passport",
+    "pasport": "passport",
+    "pasport raqam": "passport",
+    "pasport seriya": "passport",
+    "pasport seria": "passport",
 }
 
 
@@ -44,6 +53,7 @@ class ImportRow:
     email: str = ""
     phone: str = ""
     group: str = ""
+    passport: str = ""
     username: str = ""
     status: str = "valid"
     message: str = ""
@@ -170,6 +180,7 @@ def parse_excel_file(file_bytes: bytes, filename: str, faculty_id: int) -> Impor
         row.email = _normalize_email(values.get("email", ""))
         row.phone = values.get("phone", "")
         row.group = values.get("group", "")
+        row.passport = values.get("passport", "").strip()
 
         if not row.fullname:
             row.status = "error"
@@ -264,6 +275,7 @@ def preview_to_session_dict(preview: ImportPreview) -> dict[str, Any]:
                 "email": row.email,
                 "phone": row.phone,
                 "group": row.group,
+                "passport": row.passport,
                 "username": row.username,
                 "status": row.status,
                 "message": row.message,
@@ -286,6 +298,7 @@ def preview_from_session_dict(data: dict[str, Any]) -> ImportPreview:
                 email=row.get("email", ""),
                 phone=row["phone"],
                 group=row["group"],
+                passport=row.get("passport", ""),
                 username=row["username"],
                 status=row["status"],
                 message=row.get("message", ""),
@@ -354,6 +367,7 @@ def commit_import(preview: ImportPreview, password: str | None = None) -> Import
             username=row.username,
             email=row.email,
             phone_number=normalized_phone,
+            passport_number=row.passport or None,
             faculty_id=faculty.id,
             faculty=faculty.name,
             group_name=row.group.strip(),

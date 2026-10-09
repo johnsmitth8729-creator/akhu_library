@@ -38,7 +38,7 @@
                 <div class="search-input-wrapper lm-users-search-wrapper">
                     <i class="fas fa-search"></i>
                     <input type="text" name="q" value="{{ q or '' }}"
-                        placeholder="Search name, username, email, phone, group..."
+                        placeholder="Search name, username, email, phone, passport, group..."
                         class="form-input-full">
                 </div>
                 <select name="faculty" class="filter-select lm-users-faculty-select">
@@ -90,7 +90,14 @@
                             <td><span class="fw-bold">{{ u.fullname }}</span></td>
                             <td><code style="font-size: 0.82rem;">{{ u.username }}</code></td>
                             <td><span class="text-muted">{{ u.email }}</span></td>
-                            <td>{{ u.phone_number or '—' }}</td>
+                            <td>
+                                <div>{{ u.phone_number or '—' }}</div>
+                                {% if u.passport_number %}
+                                    <div style="font-size: 0.76rem; color: #64748b; font-weight: 600; margin-top: 2px;">
+                                        <i class="fas fa-id-card text-muted"></i> {{ u.passport_number }}
+                                    </div>
+                                {% endif %}
+                            </td>
                             <td>{{ u.faculty_display or '—' }}</td>
                             <td>
                                 {% if u.group_name %}
@@ -146,6 +153,12 @@
                             <span class="lm-user-card-label"><i class="fas fa-phone"></i> Phone</span>
                             <span class="lm-user-card-value">{{ u.phone_number or '—' }}</span>
                         </div>
+                        {% if u.passport_number %}
+                        <div class="lm-user-card-row">
+                            <span class="lm-user-card-label"><i class="fas fa-id-card"></i> Passport</span>
+                            <span class="lm-user-card-value">{{ u.passport_number }}</span>
+                        </div>
+                        {% endif %}
                         <div class="lm-user-card-row">
                             <span class="lm-user-card-label"><i class="fas fa-university"></i> Faculty</span>
                             <span class="lm-user-card-value lm-user-card-faculty">{{ u.faculty_display or '—' }}</span>

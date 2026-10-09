@@ -56,6 +56,12 @@
                     <span class="lm-add-cred-label">Phone</span>
                     <strong class="lm-add-cred-value">{{ created_user.phone_number }}</strong>
                 </div>
+                {% if created_user.passport_number %}
+                <div class="lm-add-cred-row">
+                    <span class="lm-add-cred-label">Passport</span>
+                    <strong class="lm-add-cred-value">{{ created_user.passport_number }}</strong>
+                </div>
+                {% endif %}
             </div>
             <div class="lm-add-password-box">
                 <span class="lm-add-cred-label">Temporary Password</span>
@@ -113,7 +119,15 @@
                             {% endfor %}
                         </div>
 
-                        <div class="form-group lm-add-form-group lm-add-span-2">
+                        <div class="form-group lm-add-form-group">
+                            <label class="lm-add-label">{{ form.passport_number.label }}</label>
+                            {{ form.passport_number(class="form-input-full lm-add-input", placeholder="AA1234567") }}
+                            {% for error in form.passport_number.errors %}
+                                <span class="text-danger small d-block mt-1">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+
+                        <div class="form-group lm-add-form-group">
                             <label class="lm-add-label">{{ form.group_name.label }}</label>
                             {{ form.group_name(class="form-input-full lm-add-input", placeholder="221-22") }}
                             {% for error in form.group_name.errors %}

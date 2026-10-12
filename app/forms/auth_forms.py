@@ -321,6 +321,11 @@ class ProfileUpdateForm(FlaskForm):
         ]
     )
 
+    email = StringField(
+        "Email Address",
+        validators=[Optional(), Email(), Length(max=120)]
+    )
+
     avatar = FileField(
         "Profile Picture",
         validators=[FileAllowed(["jpg", "png", "jpeg", "webp"], "Images only!")]

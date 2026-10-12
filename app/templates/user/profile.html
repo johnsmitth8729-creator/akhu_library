@@ -65,6 +65,15 @@ Profile
 
                     <div class="profile-info-item-pro">
                         <span>
+                            <i class="fas fa-envelope"></i>
+                            {{ form.email.label }}
+                        </span>
+                        {{ form.email(class="form-control", placeholder="example@akhu.uz") }}
+                        <small class="muted" style="font-size: 0.78rem;">Ixtiyoriy (profilingiz uchun email)</small>
+                    </div>
+
+                    <div class="profile-info-item-pro">
+                        <span>
                             <i class="fas fa-building-columns"></i>
                             {{ form.faculty_id.label }}
                         </span>
@@ -100,14 +109,6 @@ Profile
                                 <span class="muted" style="font-weight: 500; font-size: 0.9rem;">Not provided</span>
                             {% endif %}
                         </strong>
-                    </div>
-
-                    <div class="profile-info-item-pro">
-                        <span>
-                            <i class="fas fa-envelope"></i>
-                            Email Address
-                        </span>
-                        <strong>{{ current_user.email }}</strong>
                     </div>
 
                     <div class="profile-info-item-pro">

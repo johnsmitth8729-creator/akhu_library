@@ -198,6 +198,19 @@ def profile():
         else:
             current_user.phone_number = None
 
+        email_raw = (form.email.data or "").strip().lower()
+        if email_raw:
+            email_duplicate = User.query.filter(
+                User.id != current_user.id,
+                User.email == email_raw,
+            ).first()
+            if email_duplicate:
+                flash("That email address is already in use by another account.", "danger")
+                return redirect(url_for("user.profile"))
+            current_user.email = email_raw
+        else:
+            current_user.email = None
+
         if form.faculty_id.data:
             try:
                 assign_faculty(current_user, form.faculty_id.data)
@@ -223,6 +236,7 @@ def profile():
     elif request.method == "GET":
         form.fullname.data = current_user.fullname
         form.username.data = current_user.username
+        form.email.data = current_user.email or ""
         form.phone_number.data = current_user.phone_number
         form.faculty_id.data = current_user.faculty_id or 0
         form.group_name.data = current_user.group_name

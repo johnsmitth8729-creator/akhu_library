@@ -271,18 +271,16 @@ def send_email(
 ) -> bool:
 
     try:
+        valid_recipients = [r for r in recipients if r and str(r).strip()]
+        if not valid_recipients:
+            return False
 
         msg = Message(
-
             subject=subject,
-
-            recipients=recipients,
-
+            recipients=valid_recipients,
             body=body
         )
-
         mail.send(msg)
-
         return True
 
     except Exception as e:

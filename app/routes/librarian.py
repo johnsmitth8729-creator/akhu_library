@@ -1430,7 +1430,7 @@ def download_import_template():
     sample_rows = [
         ["Ali Valiyev", "ali.valiyev@univ.uz", "+998901112233", "221-22", "AA1234567", "Computer Science"],
         ["Dilnoza Karimova", "dilnoza.k@univ.uz", "+998937654321", "222-21", "AB7654321", "Software Engineering"],
-        ["Sardor Rahimov", "sardor.r@univ.uz", "+998941234567", "223-22", "AD9876543", "Applied Mathematics"],
+        ["Sardor Rahimov", "", "+998941234567", "223-22", "AD9876543", "Applied Mathematics"],
     ]
     for row in sample_rows:
         ws.append(row)

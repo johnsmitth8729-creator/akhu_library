@@ -24,8 +24,13 @@ EXPECTED_HEADERS = {
     "f.i.o": "fullname",
     "email": "email",
     "email address": "email",
+    "email (optional)": "email",
+    "email address (optional)": "email",
+    "email (ixtiyoriy)": "email",
     "pochta": "email",
+    "pochta (ixtiyoriy)": "email",
     "elektron pochta": "email",
+    "elektron pochta (ixtiyoriy)": "email",
     "phone number": "phone",
     "phone": "phone",
     "telefon": "phone",
@@ -167,11 +172,11 @@ def parse_excel_file(file_bytes: bytes, filename: str, faculty_id: int | None = 
         raise ValueError("The Excel file is empty.")
 
     header_mapping = _map_headers(raw_rows[0])
-    required_fields = {"fullname", "email", "phone", "group", "passport"}
+    required_fields = {"fullname", "phone", "group", "passport"}
     if not required_fields.issubset(set(header_mapping.values())):
         raise ValueError(
             "Invalid Excel structure. Required columns: "
-            "Full Name, Email Address, Phone Number, Group, Passport Series & Number."
+            "Full Name, Phone Number, Group, Passport Series & Number."
         )
 
     preview = ImportPreview(faculty_id=faculty_id, faculty_name=faculty_name)
@@ -250,29 +255,25 @@ def parse_excel_file(file_bytes: bytes, filename: str, faculty_id: int | None = 
             preview.rows.append(row)
             continue
 
-        if not row.email:
-            row.status = "error"
-            row.message = "Email address is required."
-            preview.rows.append(row)
-            continue
+        # Email is optional: validate only if provided
+        if row.email:
+            if not _is_valid_email(row.email):
+                row.status = "error"
+                row.message = "Invalid email address."
+                preview.rows.append(row)
+                continue
 
-        if not _is_valid_email(row.email):
-            row.status = "error"
-            row.message = "Invalid email address."
-            preview.rows.append(row)
-            continue
+            if row.email in seen_emails:
+                row.status = "error"
+                row.message = "Duplicate email in this file."
+                preview.rows.append(row)
+                continue
 
-        if row.email in seen_emails:
-            row.status = "error"
-            row.message = "Duplicate email in this file."
-            preview.rows.append(row)
-            continue
-
-        if row.email in existing_emails:
-            row.status = "error"
-            row.message = "Email already exists."
-            preview.rows.append(row)
-            continue
+            if row.email in existing_emails:
+                row.status = "error"
+                row.message = "Email already exists."
+                preview.rows.append(row)
+                continue
 
         if not row.phone:
             row.status = "error"
@@ -306,7 +307,8 @@ def parse_excel_file(file_bytes: bytes, filename: str, faculty_id: int | None = 
             continue
 
         seen_phones.add(normalized_phone)
-        seen_emails.add(row.email)
+        if row.email:
+            seen_emails.add(row.email)
         seen_passports.add(row.passport)
         seen_usernames.add(row.username)
 
@@ -463,7 +465,7 @@ def commit_import(preview: ImportPreview, password: str | None = None) -> Import
             )
             continue
 
-        if User.query.filter_by(email=row.email).first():
+        if row.email and User.query.filter_by(email=row.email).first():
             result.skipped += 1
             result.report_rows.append(
                 {
@@ -505,7 +507,7 @@ def commit_import(preview: ImportPreview, password: str | None = None) -> Import
         user = User(
             fullname=row.fullname.strip(),
             username=row.username,
-            email=row.email,
+            email=row.email if row.email else None,
             phone_number=normalized_phone,
             passport_number=passport_number,
             faculty_id=row_faculty_id,

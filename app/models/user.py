@@ -17,7 +17,7 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     fullname = db.Column(db.String(120), nullable=False)
     username = db.Column(db.String(64), unique=True, nullable=False, index=True)
-    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    email = db.Column(db.String(120), unique=True, nullable=True, index=True)
     phone_number = db.Column(db.String(30), nullable=True, unique=True, index=True)
     passport_number = db.Column(db.String(30), nullable=True, index=True)
     faculty = db.Column(db.String(120), nullable=True)

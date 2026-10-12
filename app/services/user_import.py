@@ -421,9 +421,33 @@ def cleanup_old_import_caches(max_age_seconds: int = 86400) -> None:
 
 
 def commit_import(preview: ImportPreview, password: str | None = None) -> ImportResult:
-    faculty = Faculty.query.get(preview.faculty_id) if preview.faculty_id else None
+    from app.utils.faculty_helpers import find_faculty_by_string
+
+    fallback_faculty = Faculty.query.get(preview.faculty_id) if preview.faculty_id else None
     temp_password = password or default_temp_password()
     result = ImportResult()
+
+    # Preload existing unique fields to avoid hundreds of separate DB queries
+    existing_phones = {
+        normalize_phone(p)
+        for p, in db.session.query(User.phone_number).filter(User.phone_number.isnot(None)).all()
+        if p
+    }
+    existing_emails = {
+        _normalize_email(e)
+        for e, in db.session.query(User.email).filter(User.email.isnot(None)).all()
+        if e
+    }
+    existing_passports = {
+        "".join(pass_no.split()).upper()
+        for pass_no, in db.session.query(User.passport_number).filter(User.passport_number.isnot(None)).all()
+        if pass_no and pass_no.strip()
+    }
+    existing_usernames = {
+        u.strip().upper()
+        for u, in db.session.query(User.username).all()
+        if u and u.strip()
+    }
 
     for row in preview.rows:
         result.processed += 1
@@ -440,7 +464,7 @@ def commit_import(preview: ImportPreview, password: str | None = None) -> Import
             continue
 
         normalized_phone = normalize_phone(row.phone)
-        if User.query.filter_by(phone_number=normalized_phone).first():
+        if normalized_phone in existing_phones:
             result.skipped += 1
             row.status = "error"
             row.message = "Phone number already exists."
@@ -453,8 +477,22 @@ def commit_import(preview: ImportPreview, password: str | None = None) -> Import
             )
             continue
 
-        from sqlalchemy import func
-        if User.query.filter(func.upper(User.username) == row.username.upper()).first():
+        passport_number = "".join(row.passport.split()).upper() if row.passport else None
+        if passport_number and passport_number in existing_passports:
+            result.skipped += 1
+            row.status = "error"
+            row.message = "Passport series & number already registered."
+            result.report_rows.append(
+                {
+                    "row": row.row_number,
+                    "name": row.fullname,
+                    "reason": row.message,
+                }
+            )
+            continue
+
+        username_upper = row.username.strip().upper()
+        if username_upper in existing_usernames:
             result.skipped += 1
             result.report_rows.append(
                 {
@@ -465,44 +503,28 @@ def commit_import(preview: ImportPreview, password: str | None = None) -> Import
             )
             continue
 
-        if row.email and User.query.filter_by(email=row.email).first():
-            result.skipped += 1
-            result.report_rows.append(
-                {
-                    "row": row.row_number,
-                    "name": row.fullname,
-                    "reason": "Email already exists.",
-                }
-            )
-            continue
-
-        if row.passport:
-            norm_passport = "".join(row.passport.split()).upper()
-            if User.query.filter(func.upper(func.replace(User.passport_number, " ", "")) == norm_passport).first():
+        if row.email:
+            norm_email = _normalize_email(row.email)
+            if norm_email in existing_emails:
                 result.skipped += 1
-                row.status = "error"
-                row.message = "Passport series & number already registered."
                 result.report_rows.append(
                     {
                         "row": row.row_number,
                         "name": row.fullname,
-                        "reason": row.message,
+                        "reason": "Email already exists.",
                     }
                 )
                 continue
 
-        passport_number = "".join(row.passport.split()).upper() if row.passport else None
+        # Resolve faculty using smart helper
+        matched_faculty = None
+        if getattr(row, "faculty", None) and row.faculty.strip():
+            matched_faculty = find_faculty_by_string(row.faculty.strip())
+        if not matched_faculty and fallback_faculty:
+            matched_faculty = fallback_faculty
 
-        row_faculty_name = row.faculty.strip() if getattr(row, "faculty", None) else (faculty.name if faculty else None)
-        row_faculty_id = None
-        if row_faculty_name:
-            from sqlalchemy import func
-            matched_faculty = Faculty.query.filter(func.lower(Faculty.name) == row_faculty_name.lower()).first()
-            if matched_faculty:
-                row_faculty_id = matched_faculty.id
-                row_faculty_name = matched_faculty.name
-            elif faculty:
-                row_faculty_id = faculty.id
+        row_faculty_id = matched_faculty.id if matched_faculty else None
+        row_faculty_name = matched_faculty.name if matched_faculty else (row.faculty.strip() if getattr(row, "faculty", None) else None)
 
         user = User(
             fullname=row.fullname.strip(),
@@ -519,6 +541,15 @@ def commit_import(preview: ImportPreview, password: str | None = None) -> Import
         initial_password = passport_number or temp_password
         user.set_password(initial_password)
         db.session.add(user)
+
+        # Track newly added users in memory
+        existing_phones.add(normalized_phone)
+        if passport_number:
+            existing_passports.add(passport_number)
+        existing_usernames.add(username_upper)
+        if row.email:
+            existing_emails.add(_normalize_email(row.email))
+
         result.created += 1
         result.report_rows.append(
             {

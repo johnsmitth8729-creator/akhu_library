@@ -41,6 +41,10 @@ from app.services.user_import import (
     commit_import,
     build_import_report_workbook,
     default_temp_password,
+    save_import_cache,
+    get_import_cache,
+    delete_import_cache,
+    cleanup_old_import_caches,
 )
 from app.routes.books import promote_waiting_request
 
@@ -1388,8 +1392,10 @@ def import_users():
                 upload.filename,
             )
             token = secrets.token_urlsafe(16)
-            session["user_import_preview"] = preview_to_session_dict(preview)
+            save_import_cache(f"preview_{token}", preview_to_session_dict(preview))
             session["user_import_token"] = token
+            session.pop("user_import_preview", None)
+            cleanup_old_import_caches()
             return redirect(url_for("librarian.import_users_preview", token=token, source=source))
         except ValueError as exc:
             flash(str(exc), "danger")
@@ -1480,7 +1486,7 @@ def import_users_preview():
         flash("Import preview expired. Upload the file again.", "warning")
         return redirect(url_for("librarian.import_users", source=source))
 
-    data = session.get("user_import_preview")
+    data = get_import_cache(f"preview_{token}") or session.get("user_import_preview")
     if not data:
         flash("Import preview expired. Upload the file again.", "warning")
         return redirect(url_for("librarian.import_users", source=source))
@@ -1510,7 +1516,7 @@ def import_users_confirm():
         flash("Import session expired. Upload the file again.", "warning")
         return redirect(url_for("librarian.import_users", source=source))
 
-    data = session.get("user_import_preview")
+    data = get_import_cache(f"preview_{token}") or session.get("user_import_preview")
     if not data:
         flash("Import session expired. Upload the file again.", "warning")
         return redirect(url_for("librarian.import_users", source=source))
@@ -1531,17 +1537,20 @@ def import_users_confirm():
         ),
     )
 
+    delete_import_cache(f"preview_{token}")
     session.pop("user_import_preview", None)
     session.pop("user_import_token", None)
     session.pop("user_import_password", None)
+
     report_token = secrets.token_urlsafe(16)
-    session[f"import_report_{report_token}"] = {
+    report_data = {
         "rows": result.report_rows,
         "created": result.created,
         "skipped": result.skipped,
         "processed": result.processed,
         "faculty_name": faculty_name,
     }
+    save_import_cache(f"report_{report_token}", report_data)
 
     flash(
         f"Import complete: {result.created} users created, {result.skipped} skipped.",
@@ -1568,7 +1577,7 @@ def import_users_result():
         source = "librarian"
     back_url = url_for(BACK_URLS[source])
 
-    report = session.get(f"import_report_{token}")
+    report = get_import_cache(f"report_{token}") or session.get(f"import_report_{token}")
     if not report:
         flash("Import report expired.", "warning")
         return redirect(url_for(BACK_URLS.get(source, "librarian.manage_users")))
@@ -1587,7 +1596,7 @@ def import_users_result():
 
 @librarian_bp.route("/users/import/report/<token>")
 def import_users_report(token):
-    report = session.get(f"import_report_{token}")
+    report = get_import_cache(f"report_{token}") or session.get(f"import_report_{token}")
     if not report:
         flash("Import report expired.", "warning")
         return redirect(url_for("librarian.manage_users"))
@@ -1603,3 +1612,4 @@ def import_users_report(token):
         download_name="import_report.xlsx",
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
+

@@ -8,11 +8,12 @@ from sqlalchemy import desc, func, or_
 
 from app import db
 from app.models.user import User
-from app.models.book import Book, PhysicalBook, Category, ReadingProgress, PDFBookmark
+from app.models.book import Book, PhysicalBook, Category, ReadingProgress, PDFBookmark, BookRead
 from app.models.borrow import BorrowRequest, BorrowHistory, FavoriteBook
-from app.models.competition import ReadingCompetition, QuizAttempt, CompetitionCertificate
+from app.models.competition import ReadingCompetition, QuizAttempt, CompetitionCertificate, UserBadge
+from app.models.question import Question
 from app.models.activity import ActivityLog
-from app.models.system import Settings, Notification, Review, SiteBanner, Announcement
+from app.models.system import Settings, Notification, Review, SiteBanner, Announcement, ImpersonationLog, AuditLog, ApiKey
 from app.forms.admin_forms import AdminCreateUserForm, AdminEditUserForm
 from app.forms.faculty_forms import FacultyForm
 from app.models.faculty import Faculty
@@ -622,19 +623,57 @@ def export_users():
     )
 
 
-# Placeholder bulk-action endpoint
 @admin_bp.route("/users/bulk-action", methods=["POST"])
 def bulk_user_action():
-    """Handle bulk actions on selected users (placeholder)."""
-    # Expect list of user IDs and an action name
+    """Handle bulk actions on selected users (activate, block, delete)."""
     ids = request.form.getlist("ids")
     action = request.form.get("bulk_action")
     if not ids or not action:
-        flash("No users selected or action missing.", "warning")
+        flash("Hech qanday foydalanuvchi tanlanmadi yoki amal ko‘rsatilmadi.", "warning")
         return redirect(url_for("admin.manage_users"))
-    # Placeholder logic – just flash a success message
-    flash("Bulk action received successfully.", "success")
+
+    try:
+        user_ids = [int(i) for i in ids]
+    except ValueError:
+        flash("Noto‘g‘ri foydalanuvchi identifikatorlari.", "danger")
+        return redirect(url_for("admin.manage_users"))
+
+    if action == "activate":
+        count = User.query.filter(User.id.in_(user_ids)).update({"is_blocked": False}, synchronize_session=False)
+        db.session.commit()
+        flash(f"{count} ta foydalanuvchi faollashtirildi.", "success")
+    elif action in ("deactivate", "block"):
+        count = User.query.filter(
+            User.id.in_(user_ids),
+            User.id != current_user.id,
+            User.is_superadmin == False
+        ).update({"is_blocked": True}, synchronize_session=False)
+        db.session.commit()
+        flash(f"{count} ta foydalanuvchi bloklandi.", "success")
+    elif action == "delete":
+        deleted_count = 0
+        errors = []
+        for uid in user_ids:
+            if uid == current_user.id:
+                continue
+            u = User.query.get(uid)
+            if not u:
+                continue
+            ok, msg = delete_user_cleanly(u)
+            if ok:
+                deleted_count += 1
+            else:
+                errors.append(msg)
+
+        if deleted_count > 0:
+            flash(f"{deleted_count} ta foydalanuvchi butunlay o‘chirildi.", "success")
+        if errors:
+            flash(" | ".join(errors[:3]), "danger")
+    else:
+        flash(f"Noma'lum amal: {action}", "warning")
+
     return redirect(url_for("admin.manage_users"))
+
 
 
 @admin_bp.route("/users/create", methods=["GET", "POST"])
@@ -920,19 +959,12 @@ def unblock_user(user_id):
     return redirect(url_for("admin.manage_users"))
 
 
-@admin_bp.route("/users/<int:user_id>/delete", methods=["POST"])
-def delete_user(user_id):
-    user = User.query.get_or_404(user_id)
+def delete_user_cleanly(user: User) -> tuple[bool, str]:
+    """Permanently delete a user and safely clean up all their related records."""
     if user.is_superadmin:
-        abort(403)
-
-    if user.id == current_user.id:
-        flash("You cannot delete yourself.", "warning")
-        return redirect(url_for("admin.manage_users"))
-
+        return False, f"Superadmin '{user.username}' o‘chirilishi mumkin emas."
     if user.is_admin:
-        flash("Admin users cannot be deleted from this panel.", "danger")
-        return redirect(url_for("admin.manage_users"))
+        return False, f"Admin '{user.username}' ushbu paneldan o‘chirilishi mumkin emas."
 
     active_borrows = BorrowHistory.query.filter(
         BorrowHistory.user_id == user.id,
@@ -940,23 +972,63 @@ def delete_user(user_id):
     ).count()
 
     if active_borrows:
-        flash("This user cannot be deleted while they have active borrowed books.", "danger")
+        return False, f"'{user.username}' foydalanuvchisida {active_borrows} ta qaytarilmagan kitob bor. Avval kitoblarni qaytaring."
+
+    try:
+        # 1. Borrowing
+        BorrowRequest.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+        BorrowHistory.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+
+        # 2. Reading & Book interactions
+        FavoriteBook.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+        ReadingProgress.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+        PDFBookmark.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+        BookRead.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+
+        # 3. Reviews & Notifications & Activity
+        Review.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+        Notification.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+        ActivityLog.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+
+        # 4. Competitions
+        CompetitionCertificate.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+        UserBadge.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+        attempts = QuizAttempt.query.filter_by(user_id=user.id).all()
+        for att in attempts:
+            db.session.delete(att)
+
+        # 5. Impersonation & Audit logs
+        ImpersonationLog.query.filter(
+            (ImpersonationLog.superadmin_id == user.id) | (ImpersonationLog.target_user_id == user.id)
+        ).delete(synchronize_session=False)
+        AuditLog.query.filter_by(admin_id=user.id).delete(synchronize_session=False)
+
+        # 6. Nullify creator relations
+        ApiKey.query.filter_by(created_by=user.id).update({"created_by": None}, synchronize_session=False)
+        ReadingCompetition.query.filter_by(created_by_id=user.id).update({"created_by_id": None}, synchronize_session=False)
+        Question.query.filter_by(created_by_id=user.id).update({"created_by_id": None}, synchronize_session=False)
+
+        # 7. Delete user
+        db.session.delete(user)
+        db.session.commit()
+        return True, f"'{user.username}' foydalanuvchisi butunlay o‘chirildi."
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Failed to delete user {user.id}: {e}")
+        return False, f"'{user.username}' foydalanuvchisini o‘chirishda xatolik yuz berdi: {str(e)}"
+
+
+@admin_bp.route("/users/<int:user_id>/delete", methods=["POST"])
+def delete_user(user_id):
+    user = User.query.get_or_404(user_id)
+    if user.id == current_user.id:
+        flash("O‘zingizni o‘chira olmaysiz.", "warning")
         return redirect(url_for("admin.manage_users"))
 
-    BorrowRequest.query.filter_by(user_id=user.id).delete(synchronize_session=False)
-    BorrowHistory.query.filter_by(user_id=user.id).delete(synchronize_session=False)
-    FavoriteBook.query.filter_by(user_id=user.id).delete(synchronize_session=False)
-    ReadingProgress.query.filter_by(user_id=user.id).delete(synchronize_session=False)
-    PDFBookmark.query.filter_by(user_id=user.id).delete(synchronize_session=False)
-    Notification.query.filter_by(user_id=user.id).delete(synchronize_session=False)
-    Review.query.filter_by(user_id=user.id).delete(synchronize_session=False)
-    ActivityLog.query.filter_by(user_id=user.id).delete(synchronize_session=False)
-
-    db.session.delete(user)
-    db.session.commit()
-
-    flash("User has been permanently deleted.", "success")
+    success, msg = delete_user_cleanly(user)
+    flash(msg, "success" if success else "danger")
     return redirect(url_for("admin.manage_users"))
+
 
 
 @admin_bp.route("/settings", methods=["GET", "POST"])

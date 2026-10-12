@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import re
+import os
+import json
+import time
 from dataclasses import dataclass, field
 from io import BytesIO
 from typing import Any
@@ -360,6 +363,59 @@ def preview_from_session_dict(data: dict[str, Any]) -> ImportPreview:
             )
         )
     return preview
+
+
+def get_import_cache_dir() -> str:
+    from flask import current_app
+    cache_dir = os.path.join(current_app.instance_path, "import_cache")
+    os.makedirs(cache_dir, exist_ok=True)
+    return cache_dir
+
+
+def save_import_cache(key: str, data: dict[str, Any]) -> None:
+    cache_dir = get_import_cache_dir()
+    filepath = os.path.join(cache_dir, f"{key}.json")
+    with open(filepath, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False)
+
+
+def get_import_cache(key: str) -> dict[str, Any] | None:
+    cache_dir = get_import_cache_dir()
+    filepath = os.path.join(cache_dir, f"{key}.json")
+    if not os.path.exists(filepath):
+        return None
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+def delete_import_cache(key: str) -> None:
+    try:
+        cache_dir = get_import_cache_dir()
+        filepath = os.path.join(cache_dir, f"{key}.json")
+        if os.path.exists(filepath):
+            os.remove(filepath)
+    except OSError:
+        pass
+
+
+def cleanup_old_import_caches(max_age_seconds: int = 86400) -> None:
+    try:
+        cache_dir = get_import_cache_dir()
+        now = time.time()
+        for fname in os.listdir(cache_dir):
+            if fname.endswith(".json"):
+                fpath = os.path.join(cache_dir, fname)
+                try:
+                    if now - os.path.getmtime(fpath) > max_age_seconds:
+                        os.remove(fpath)
+                except OSError:
+                    pass
+    except Exception:
+        pass
+
 
 
 def commit_import(preview: ImportPreview, password: str | None = None) -> ImportResult:
